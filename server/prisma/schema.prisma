@@ -1,0 +1,97 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Users ───────────────────────────────────────────────────────────────────
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         Role     @default(STUDENT)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relations
+  refreshTokens RefreshToken[]
+  progress      LessonProgress[]
+  mistakes      Mistake[]
+  testScores    TestScore[]
+
+  @@map("users")
+}
+
+enum Role {
+  STUDENT
+  ADMIN
+}
+
+// ─── Auth ────────────────────────────────────────────────────────────────────
+
+model RefreshToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("refresh_tokens")
+}
+
+// ─── Learning Progress ────────────────────────────────────────────────────────
+
+model LessonProgress {
+  id         String   @id @default(cuid())
+  userId     String
+  subjectKey String   // "physics", "math", etc.
+  levelId    String   // "ph1", "ma3", etc.
+  score      Int
+  completedAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, subjectKey, levelId])
+  @@index([userId])
+  @@map("lesson_progress")
+}
+
+model Mistake {
+  id        String   @id @default(cuid())
+  userId    String
+  subject   String
+  topic     String
+  question  String
+  correct   String
+  given     String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([userId, subject, topic])
+  @@map("mistakes")
+}
+
+model TestScore {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String   // "sat_orkhan_exam1", "ielts_writing", "lesson_quiz", etc.
+  score     Int
+  total     Int
+  section   String?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("test_scores")
+}

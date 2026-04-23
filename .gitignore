@@ -1,0 +1,32 @@
+# --------------- Dependencies ----------------------------------------------
+node_modules/
+# --------------- Environment -----------------------------------------------
+.env
+.env.local
+.env.*.local
+#--------------- Build Outputs ----------------------------------------------
+dist/
+build/
+# -------------- Prisma -----------------------------------------------------
+# Generated client — rebuilt with "prisma generate" after install
+server/node_modules/.prisma/
+
+
+#----- Logs ------------------------------
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+
+
+#------------------OS -------------------------------------------------------
+.DS_Store
+Thumbs.db
+
+
+#------------------Editor ---------------------------------------------------
+.vscode/
+.idea/
+*.swp
+*.swo
