@@ -4,6 +4,37 @@ import { STORE, getWeakTopics, recordTestScore } from "../utils/store.js";
 import { generateWeaknessQuiz } from "../utils/ai.js";
 import QuizEngine from "../components/QuizEngine.jsx";
 
+// Считает streak — количество последовательных дней активности до сегодня включительно
+function calcStreak(lessons, scores) {
+  const days = new Set();
+
+  lessons.forEach((l) => {
+    if (l.date) days.add(l.date.slice(0, 10));
+  });
+  scores.forEach((s) => {
+    if (s.date) days.add(s.date.slice(0, 10));
+  });
+
+  if (!days.size) return 0;
+
+  const today = new Date();
+  let streak = 0;
+
+  for (let i = 0; i < 365; i++) {
+    const d = new Date(today);
+    d.setDate(today.getDate() - i);
+    const key = d.toISOString().slice(0, 10);
+    if (days.has(key)) {
+      streak++;
+    } else {
+      // Пропуск сегодня не обнуляет streak — пользователь ещё не занимался
+      if (i !== 0) break;
+    }
+  }
+
+  return streak;
+}
+
 export default function DashboardPage({ user, setPage }) {
   const [view, setView] = useState("main");
   const [wqs, setWqs] = useState([]);
@@ -13,6 +44,7 @@ export default function DashboardPage({ user, setPage }) {
   const completed = STORE.completedLessons.length;
   const testCount = STORE.testScores.length;
   const mistakeCount = STORE.mistakes.length;
+  const streak = calcStreak(STORE.completedLessons, STORE.testScores);
 
   const sp = Object.entries(SUBJECTS).map(([k, s]) => {
     const sl = STORE.completedLessons.filter((l) => l.subjectKey === k);
@@ -65,10 +97,10 @@ export default function DashboardPage({ user, setPage }) {
 
         <div className="g2" style={{ marginBottom: 20 }}>
           {[
-            [completed.toString(), "Lessons Completed"],
-            [`${Math.min(completed + 1, 7)} 🔥`, "Day Streak"],
-            [testCount.toString(), "Tests Taken"],
-            [mistakeCount.toString(), "Mistakes Logged"],
+            [completed.toString(),                        "Lessons Completed"],
+            [`${streak} 🔥`,                              "Day Streak"],
+            [testCount.toString(),                        "Tests Taken"],
+            [mistakeCount.toString(),                     "Mistakes Logged"],
           ].map(([v, l]) => (
             <div key={l} className="dstat">
               <div className="dsv">{v}</div>
