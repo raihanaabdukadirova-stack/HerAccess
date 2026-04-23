@@ -1,42 +1,42 @@
-const ANTHROPIC_API = "https://api.anthropic.com/v1/messages";
-const MODEL = "claude-sonnet-4-20250514";
+import { GoogleGenerativeAI } from '@google/generative-ai';
 
-async function callAnthropic(system, userMsg, maxTokens = 1200) {
-  const res = await fetch(ANTHROPIC_API, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-api-key": process.env.ANTHROPIC_API_KEY,
-      "anthropic-version": "2023-06-01",
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+
+// gemini-1.5-flash — быстрый и дешёвый, подходит для всех задач платформы
+const MODEL = 'gemini-1.5-flash';
+
+async function callGemini(system, userMsg, maxTokens = 1200) {
+  const model = genAI.getGenerativeModel({
+    model: MODEL,
+    systemInstruction: system,
+    generationConfig: {
+      maxOutputTokens: maxTokens,
+      temperature: 0.7,
     },
-    body: JSON.stringify({
-      model: MODEL,
-      max_tokens: maxTokens,
-      system,
-      messages: [{ role: "user", content: userMsg }],
-    }),
   });
 
-  if (!res.ok) {
-    const err = new Error(`Anthropic API error: ${res.status}`);
+  const result = await model.generateContent(userMsg);
+  const response = result.response;
+
+  if (!response) {
+    const err = new Error('Gemini returned empty response');
     err.status = 502;
     throw err;
   }
 
-  const data = await res.json();
-  return data.content?.map((b) => b.text || "").join("") || "";
+  return response.text();
 }
 
 // POST /api/ai/chat
-// body: { system, message, history?, maxTokens? }
+// body: { system, message, maxTokens? }
 export async function chatController(req, res) {
   const { system, message, maxTokens = 1000 } = req.body;
 
   if (!message?.trim()) {
-    return res.status(422).json({ error: "message is required." });
+    return res.status(422).json({ error: 'message is required.' });
   }
 
-  const text = await callAnthropic(system, message, maxTokens);
+  const text = await callGemini(system, message, maxTokens);
   res.json({ text });
 }
 
@@ -46,22 +46,21 @@ export async function quizController(req, res) {
   const { subject, levelTitle, topics, count = 10 } = req.body;
 
   if (!subject || !levelTitle || !Array.isArray(topics)) {
-    return res.status(422).json({ error: "subject, levelTitle, topics[] are required." });
+    return res.status(422).json({ error: 'subject, levelTitle, topics[] are required.' });
   }
 
   try {
-    const raw = await callAnthropic(
-      "Generate educational quiz questions as valid JSON only.",
-      `Generate ${count} MCQ questions for ${subject} - ${levelTitle}. Topics: ${topics.join(", ")}. Return JSON array: [{"q":"...","opts":["A","B","C","D"],"ans":0,"exp":"...","topic":"..."}]`,
+    const raw = await callGemini(
+      'Generate educational quiz questions as valid JSON only. Return nothing except the JSON array.',
+      `Generate ${count} MCQ questions for ${subject} - ${levelTitle}. Topics: ${topics.join(', ')}. Return JSON array: [{"q":"...","opts":["A","B","C","D"],"ans":0,"exp":"...","topic":"..."}]`,
       1500
     );
-    const questions = JSON.parse(raw.replace(/```json|```/g, "").trim());
+    const questions = JSON.parse(raw.replace(/```json|```/g, '').trim());
     res.json({ questions });
   } catch {
-    // Fallback если AI вернул невалидный JSON
     const questions = topics.slice(0, count).map((t) => ({
       q: `Key concept in "${t}"?`,
-      opts: ["Option A", "Option B (correct)", "Option C", "Option D"],
+      opts: ['Option A', 'Option B (correct)', 'Option C', 'Option D'],
       ans: 1,
       exp: `Covers fundamentals of ${t} in ${subject}.`,
       topic: t,
@@ -76,23 +75,23 @@ export async function weaknessQuizController(req, res) {
   const { weakTopics } = req.body;
 
   if (!Array.isArray(weakTopics) || !weakTopics.length) {
-    return res.status(422).json({ error: "weakTopics[] is required." });
+    return res.status(422).json({ error: 'weakTopics[] is required.' });
   }
 
-  const list = weakTopics.map((w) => w.topic.split(":")[1] || w.topic).join(", ");
+  const list = weakTopics.map((w) => w.topic.split(':')[1] || w.topic).join(', ');
 
   try {
-    const raw = await callAnthropic(
-      "Generate targeted quiz questions as valid JSON only.",
+    const raw = await callGemini(
+      'Generate targeted quiz questions as valid JSON only. Return nothing except the JSON array.',
       `10 questions for weak areas: ${list}. Return JSON: [{"q":"...","opts":["A","B","C","D"],"ans":0,"exp":"...","topic":"..."}]`,
       1500
     );
-    const questions = JSON.parse(raw.replace(/```json|```/g, "").trim());
+    const questions = JSON.parse(raw.replace(/```json|```/g, '').trim());
     res.json({ questions });
   } catch {
     const questions = weakTopics.slice(0, 5).map((w) => ({
-      q: `Review: what is key about "${w.topic.split(":")[1] || w.topic}"?`,
-      opts: ["Option A", "Option B", "Option C", "Option D"],
+      q: `Review: what is key about "${w.topic.split(':')[1] || w.topic}"?`,
+      opts: ['Option A', 'Option B', 'Option C', 'Option D'],
       ans: 1,
       exp: `You missed this ${w.count} time(s). Review carefully.`,
       topic: w.topic,
@@ -107,18 +106,18 @@ export async function essayController(req, res) {
   const { essay } = req.body;
 
   if (!essay?.trim() || essay.trim().split(/\s+/).length < 50) {
-    return res.status(422).json({ error: "Essay must be at least 50 words." });
+    return res.status(422).json({ error: 'Essay must be at least 50 words.' });
   }
 
   try {
-    const raw = await callAnthropic(
-      `You are an expert IELTS examiner. Respond ONLY with valid JSON: {"band":7.0,"task_achievement":7,"coherence":7,"vocabulary":6.5,"grammar":7,"feedback":"2-3 sentences","improvements":["tip1","tip2","tip3"]}`,
-      `IELTS Task 2:\n\n${essay}`,
+    const raw = await callGemini(
+      `You are an expert IELTS examiner. Respond ONLY with valid JSON, no markdown, no explanation: {"band":7.0,"task_achievement":7,"coherence":7,"vocabulary":6.5,"grammar":7,"feedback":"2-3 sentences","improvements":["tip1","tip2","tip3"]}`,
+      `IELTS Task 2 essay to evaluate:\n\n${essay}`,
       800
     );
-    const result = JSON.parse(raw.replace(/```json|```/g, "").trim());
+    const result = JSON.parse(raw.replace(/```json|```/g, '').trim());
     res.json(result);
   } catch {
-    res.status(502).json({ error: "Could not evaluate essay. Please try again." });
+    res.status(502).json({ error: 'Could not evaluate essay. Please try again.' });
   }
 }
