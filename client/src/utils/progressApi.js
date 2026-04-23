@@ -1,11 +1,19 @@
-import { api } from "./api.js";
+import { api } from './api.js';
 
-export const profileApi = {
-  getProfile:     ()           => api.get("/api/profile"),
-  updateName:     (name)       => api.patch("/api/profile/name", { name }),
-  changePassword: (data)       => api.patch("/api/profile/password", data),
-  deleteSession:  (sessionId)  => api.delete(`/api/profile/sessions/${sessionId}`),
+export const progressApi = {
+  // Dashboard — всё одним запросом
+  getDashboard: () => api.get('/api/progress/dashboard'),
 
-  // DELETE с телом — пароль нужен серверу для подтверждения удаления
-  deleteAccount:  (password)   => api.deleteWithBody("/api/profile", { password }),
+  // Lessons
+  saveLesson: (data) => api.post('/api/progress/lessons', data),
+  getLessons: () => api.get('/api/progress/lessons'),
+
+  // Mistakes
+  saveMistake: (data) => api.post('/api/progress/mistakes', data),
+  getMistakes: () => api.get('/api/progress/mistakes'),
+  getWeakTopics: () => api.get('/api/progress/weak-topics'),
+
+  // Test scores
+  saveTestScore: (data) => api.post('/api/progress/test-scores', data),
+  getTestScores: () => api.get('/api/progress/test-scores'),
 };
