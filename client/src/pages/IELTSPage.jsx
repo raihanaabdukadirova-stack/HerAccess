@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { IELTS_PASSAGE, IELTS_WRITING_PROMPT } from "../data/ielts.js";
-import { callAI } from "../utils/ai.js";
+import { api } from "../utils/api.js";
 import { recordMistake, recordTestScore } from "../utils/store.js";
 
 export default function IELTSPage({ setPage }) {
@@ -16,12 +16,8 @@ export default function IELTSPage({ setPage }) {
     setChecking(true);
     setEssayResult(null);
     try {
-      const text = await callAI(
-        `You are an expert IELTS examiner. Respond ONLY with valid JSON: {"band":7.0,"task_achievement":7,"coherence":7,"vocabulary":6.5,"grammar":7,"feedback":"2-3 sentences","improvements":["tip1","tip2","tip3"]}`,
-        `IELTS Task 2:\n\n${essay}`,
-        800
-      );
-      setEssayResult(JSON.parse(text.replace(/```json|```/g, "").trim()));
+      const result = await api.post("/api/ai/essay", { essay });
+      setEssayResult(result);
       recordTestScore("ielts_writing", 0, 9, "Writing");
     } catch {
       setEssayResult({ band: "—", feedback: "Unable to evaluate. Try again.", improvements: [] });
@@ -42,10 +38,10 @@ export default function IELTSPage({ setPage }) {
           <div className="ps">Cambridge-style tests, AI essay checker, speaking trainer.</div>
           <div className="g2">
             {[
-              { id: "reading", icon: "📖", title: "Academic Reading", desc: "Passages · 5 questions · Auto-scored" },
-              { id: "writing", icon: "✍️", title: "Writing Task 2", desc: "AI essay checker · Band 0–9 · Feedback" },
-              { id: "listening", icon: "🎧", title: "Listening Test", desc: "Audio player · Section questions" },
-              { id: "speaking", icon: "🎤", title: "Speaking Trainer", desc: "AI conversation · Fluency feedback" },
+              { id: "reading",  icon: "📖", title: "Academic Reading",  desc: "Passages · 5 questions · Auto-scored" },
+              { id: "writing",  icon: "✍️", title: "Writing Task 2",    desc: "AI essay checker · Band 0–9 · Feedback" },
+              { id: "listening",icon: "🎧", title: "Listening Test",    desc: "Audio player · Section questions" },
+              { id: "speaking", icon: "🎤", title: "Speaking Trainer",  desc: "AI conversation · Fluency feedback" },
             ].map((s) => (
               <div key={s.id} className="ielts-sec" onClick={() => setSection(s.id)}>
                 <div style={{ fontSize: 26, marginBottom: 8 }}>{s.icon}</div>
@@ -62,10 +58,7 @@ export default function IELTSPage({ setPage }) {
     return (
       <div className="page">
         <div className="wrap" style={{ paddingTop: 28 }}>
-          <button
-            className="back-btn"
-            onClick={() => { setSection("menu"); setRDone(false); setRAnswers({}); }}
-          >
+          <button className="back-btn" onClick={() => { setSection("menu"); setRDone(false); setRAnswers({}); }}>
             ← Back to IELTS
           </button>
           <div className="ph">📖 IELTS Academic Reading</div>
@@ -118,26 +111,17 @@ export default function IELTSPage({ setPage }) {
               {IELTS_PASSAGE.questions.map((q, i) => {
                 const correct = rAnswers[q.id] === q.answer;
                 return (
-                  <div
-                    key={q.id}
-                    style={{
-                      background: correct ? "#f0fdf4" : "#fef2f2",
-                      border: `1px solid ${correct ? "#86efac" : "#fca5a5"}`,
-                      borderRadius: 10,
-                      padding: "10px 14px",
-                      textAlign: "left",
-                      marginBottom: 8,
-                      maxWidth: 520,
-                      margin: "8px auto",
-                    }}
-                  >
+                  <div key={q.id} style={{
+                    background: correct ? "#f0fdf4" : "#fef2f2",
+                    border: `1px solid ${correct ? "#86efac" : "#fca5a5"}`,
+                    borderRadius: 10, padding: "10px 14px",
+                    textAlign: "left", marginBottom: 8, maxWidth: 520, margin: "8px auto",
+                  }}>
                     <div style={{ fontSize: 12.5, fontWeight: 600, marginBottom: 4 }}>
                       {i + 1}. {q.text}
                     </div>
                     <div style={{ fontSize: 11.5, color: correct ? "#059669" : "#dc2626" }}>
-                      {correct
-                        ? "✓ Correct"
-                        : `✗ You: ${rAnswers[q.id] || "unanswered"} → Correct: ${q.answer}`}
+                      {correct ? "✓ Correct" : `✗ You: ${rAnswers[q.id] || "unanswered"} → Correct: ${q.answer}`}
                     </div>
                     {!correct && (
                       <div style={{ fontSize: 11, color: "var(--g400)", marginTop: 3 }}>
@@ -147,11 +131,7 @@ export default function IELTSPage({ setPage }) {
                   </div>
                 );
               })}
-              <button
-                className="btn btn-o"
-                style={{ marginTop: 16 }}
-                onClick={() => { setRDone(false); setRAnswers({}); }}
-              >
+              <button className="btn btn-o" style={{ marginTop: 16 }} onClick={() => { setRDone(false); setRAnswers({}); }}>
                 Retry
               </button>
             </div>
@@ -164,23 +144,12 @@ export default function IELTSPage({ setPage }) {
     return (
       <div className="page">
         <div className="wrap" style={{ paddingTop: 28 }}>
-          <button
-            className="back-btn"
-            onClick={() => { setSection("menu"); setEssayResult(null); setEssay(""); }}
-          >
+          <button className="back-btn" onClick={() => { setSection("menu"); setEssayResult(null); setEssay(""); }}>
             ← Back to IELTS
           </button>
           <div className="ph">✍️ IELTS Writing Task 2</div>
           <div className="card" style={{ marginBottom: 16 }}>
-            <h4
-              style={{
-                fontFamily: "'Lora',serif",
-                fontSize: 15,
-                fontWeight: 700,
-                marginBottom: 10,
-                color: "var(--p)",
-              }}
-            >
+            <h4 style={{ fontFamily: "'Lora',serif", fontSize: 15, fontWeight: 700, marginBottom: 10, color: "var(--p)" }}>
               Task 2 Question
             </h4>
             <div style={{ fontSize: 13.5, lineHeight: 1.8 }}>{IELTS_WRITING_PROMPT}</div>
@@ -213,9 +182,9 @@ export default function IELTSPage({ setPage }) {
                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap", margin: "12px 0" }}>
                   {[
                     ["Task Achievement", essayResult.task_achievement],
-                    ["Coherence", essayResult.coherence],
-                    ["Vocabulary", essayResult.vocabulary],
-                    ["Grammar", essayResult.grammar],
+                    ["Coherence",        essayResult.coherence],
+                    ["Vocabulary",       essayResult.vocabulary],
+                    ["Grammar",          essayResult.grammar],
                   ].map(([k, v]) => (
                     <div key={k} className="sscore">
                       <div style={{ fontSize: 20, fontWeight: 700, color: "var(--p)" }}>{v}</div>
@@ -224,26 +193,17 @@ export default function IELTSPage({ setPage }) {
                   ))}
                 </div>
               )}
-              <div
-                style={{
-                  background: "var(--p4)",
-                  borderLeft: "3px solid var(--p2)",
-                  padding: "12px 14px",
-                  borderRadius: "0 8px 8px 0",
-                  fontSize: 13,
-                  lineHeight: 1.7,
-                  marginBottom: 12,
-                }}
-              >
+              <div style={{
+                background: "var(--p4)", borderLeft: "3px solid var(--p2)",
+                padding: "12px 14px", borderRadius: "0 8px 8px 0",
+                fontSize: 13, lineHeight: 1.7, marginBottom: 12,
+              }}>
                 {essayResult.feedback}
               </div>
               {essayResult.improvements?.length > 0 && (
                 <div>
                   {essayResult.improvements.map((tip, i) => (
-                    <div
-                      key={i}
-                      style={{ display: "flex", gap: 8, fontSize: 13, marginBottom: 7, color: "var(--g600)" }}
-                    >
+                    <div key={i} style={{ display: "flex", gap: 8, fontSize: 13, marginBottom: 7, color: "var(--g600)" }}>
                       <span style={{ color: "var(--p)", fontWeight: 700 }}>{i + 1}.</span>
                       {tip}
                     </div>
@@ -262,31 +222,12 @@ export default function IELTSPage({ setPage }) {
         <div className="wrap" style={{ paddingTop: 28 }}>
           <button className="back-btn" onClick={() => setSection("menu")}>← Back</button>
           <div className="ph">🎧 IELTS Listening</div>
-          <div
-            style={{
-              background: "var(--g100)",
-              borderRadius: "var(--r)",
-              padding: 20,
-              textAlign: "center",
-              marginTop: 14,
-            }}
-          >
+          <div style={{ background: "var(--g100)", borderRadius: "var(--r)", padding: 20, textAlign: "center", marginTop: 14 }}>
             <div style={{ fontSize: 32, marginBottom: 10 }}>🎵</div>
             <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 12 }}>
               Section 1 — Conversation at a travel agency
             </div>
-            <button
-              style={{
-                background: "var(--p)",
-                color: "#fff",
-                border: "none",
-                borderRadius: 999,
-                padding: "8px 18px",
-                fontSize: 13,
-                fontWeight: 600,
-                cursor: "pointer",
-              }}
-            >
+            <button style={{ background: "var(--p)", color: "#fff", border: "none", borderRadius: 999, padding: "8px 18px", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
               ▶ Play Audio
             </button>
           </div>
@@ -300,15 +241,7 @@ export default function IELTSPage({ setPage }) {
         <button className="back-btn" onClick={() => setSection("menu")}>← Back</button>
         <div className="ph">🎤 IELTS Speaking Trainer</div>
         <div className="card" style={{ marginBottom: 20 }}>
-          <h4
-            style={{
-              fontFamily: "'Lora',serif",
-              fontSize: 15,
-              fontWeight: 700,
-              marginBottom: 10,
-              color: "var(--p)",
-            }}
-          >
+          <h4 style={{ fontFamily: "'Lora',serif", fontSize: 15, fontWeight: 700, marginBottom: 10, color: "var(--p)" }}>
             Speaking Part 2
           </h4>
           <div style={{ fontSize: 13.5, lineHeight: 1.8, whiteSpace: "pre-wrap" }}>

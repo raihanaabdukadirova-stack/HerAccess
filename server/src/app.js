@@ -7,6 +7,9 @@ import cookieParser from "cookie-parser";
 import rateLimit from "express-rate-limit";
 
 import authRoutes from "./modules/auth/auth.routes.js";
+import progressRoutes from "./modules/progress/progress.routes.js";
+import aiRoutes from "./modules/ai/ai.routes.js";
+import profileRoutes from "./modules/profile/profile.routes.js";
 import { errorHandler } from "./middleware/errorHandler.js";
 
 const app = express();
@@ -42,7 +45,10 @@ if (process.env.NODE_ENV !== "test") {
 // ─── Routes ───────────────────────────────────────────────────────────────────
 app.get("/health", (_req, res) => res.json({ status: "ok" }));
 
-app.use("/api/auth", authLimiter, authRoutes);
+app.use("/api/auth",     authLimiter, authRoutes);
+app.use("/api/progress",             progressRoutes);
+app.use("/api/ai",                   aiRoutes);
+app.use("/api/profile",              profileRoutes);
 
 // 404
 app.use((_req, res) => res.status(404).json({ error: "Route not found." }));
