@@ -1,7 +1,11 @@
 import { useState } from "react";
 import { recordMistake, recordLesson } from "../utils/store.js";
 
-export default function QuizEngine({ questions, subject, levelTitle, onComplete, onBack }) {
+// subject     — display-название для UI ("Physics")
+// subjectKey  — ключ для БД ("physics")
+// levelTitle  — display-название уровня для UI ("Elementary Physics")
+// levelId     — id уровня для БД ("ph1")
+export default function QuizEngine({ questions, subject, subjectKey, levelTitle, levelId, onComplete, onBack }) {
   const [idx, setIdx] = useState(0);
   const [answered, setAnswered] = useState(null);
   const [score, setScore] = useState(0);
@@ -28,7 +32,10 @@ export default function QuizEngine({ questions, subject, levelTitle, onComplete,
 
   function next() {
     if (idx >= total - 1) {
-      recordLesson(subject, levelTitle, score + (answered === q.ans ? 1 : 0));
+      const finalScore = score + (answered === q.ans ? 1 : 0);
+      // subjectKey и levelId — валидные ключи для БД
+      // subject и levelTitle — только для отображения в UI
+      recordLesson(subjectKey || subject, levelId || levelTitle, finalScore);
       setDone(true);
     } else {
       setIdx((i) => i + 1);

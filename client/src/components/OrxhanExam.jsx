@@ -12,22 +12,38 @@ export default function OrxhanExam({ onBack }) {
   const [timeLeft, setTimeLeft] = useState(3600);
   const [paused, setPaused] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
-  const timerRef = useRef(null);
+
+  // Результаты вычисляются один раз при переходе в фазу "results"
+  // и сохраняются в ref, чтобы не пересчитываться при каждом ре-рендере
+  const resultsRef = useRef(null);
 
   useEffect(() => {
     if (phase !== "test" || paused) return;
-    timerRef.current = setInterval(() => {
+    const id = setInterval(() => {
       setTimeLeft((t) => {
         if (t <= 1) {
-          clearInterval(timerRef.current);
+          clearInterval(id);
           setPhase("results");
           return 0;
         }
         return t - 1;
       });
     }, 1000);
-    return () => clearInterval(timerRef.current);
+    return () => clearInterval(id);
   }, [phase, paused]);
+
+  // Вычисляем результаты и записываем score ровно один раз —
+  // когда phase впервые становится "results"
+  useEffect(() => {
+    if (phase !== "results") return;
+
+    const timeUsed = 3600 - timeLeft;
+    const result = calcResults(answers, timeUsed);
+    resultsRef.current = result;
+
+    recordTestScore("sat_orkhan_exam1", result.correct, 40, "Orkhan Exam 1");
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase]); // намеренно только phase — срабатывает ровно при переходе
 
   function start() {
     setPhase("test");
@@ -36,6 +52,7 @@ export default function OrxhanExam({ onBack }) {
     setFlagged(new Set());
     setTimeLeft(3600);
     setPaused(false);
+    resultsRef.current = null;
   }
 
   function toggleFlag(id) {
@@ -47,7 +64,6 @@ export default function OrxhanExam({ onBack }) {
   }
 
   function submit() {
-    clearInterval(timerRef.current);
     setShowConfirm(false);
     setPhase("results");
   }
@@ -55,11 +71,12 @@ export default function OrxhanExam({ onBack }) {
   const q = ORKHAN_Q[cur];
   const answered = Object.keys(answers).length;
 
-  function calcResults() {
+  // Чистая функция — принимает answers явно, не замыкается на стейт
+  function calcResults(ans, timeUsed) {
     let correct = 0, wrong = 0, skipped = 0;
     const bySection = {};
     ORKHAN_Q.forEach((q) => {
-      const given = answers[q.id];
+      const given = ans[q.id];
       const isCorrect =
         q.type === "mcq"
           ? given === q.ans
@@ -80,7 +97,7 @@ export default function OrxhanExam({ onBack }) {
       bySection[q.section].total++;
       if (isCorrect) bySection[q.section].correct++;
     });
-    return { correct, wrong, skipped, bySection };
+    return { correct, wrong, skipped, bySection, timeUsed };
   }
 
   if (phase === "intro")
@@ -221,10 +238,14 @@ export default function OrxhanExam({ onBack }) {
     );
 
   if (phase === "results") {
-    const { correct, wrong, skipped, bySection } = calcResults();
+    // Используем закешированные результаты из ref.
+    // Пока useEffect не отработал (первый рендер фазы) — показываем заглушку.
+    const res = resultsRef.current;
+    if (!res) return null;
+
+    const { correct, wrong, skipped, bySection, timeUsed } = res;
     const pct = Math.round((correct / 40) * 100);
-    const timeUsed = 3600 - timeLeft;
-    recordTestScore("sat_orkhan_exam1", correct, 40, "Orkhan Exam 1");
+
     return (
       <div className="rpage">
         <div style={{ maxWidth: 860, margin: "0 auto" }}>

@@ -94,16 +94,23 @@ export const api = {
   post:   (path, body, opts) => request(path, { method: "POST",   body: JSON.stringify(body), ...opts }),
   put:    (path, body, opts) => request(path, { method: "PUT",    body: JSON.stringify(body), ...opts }),
   patch:  (path, body, opts) => request(path, { method: "PATCH",  body: JSON.stringify(body), ...opts }),
+
+  // DELETE без тела — стандартный случай
   delete: (path, opts)       => request(path, { method: "DELETE", ...opts }),
+
+  // DELETE с JSON-телом — для эндпоинтов вроде DELETE /api/profile (нужен пароль)
+  deleteWithBody: (path, body, opts) =>
+    request(path, { method: "DELETE", body: JSON.stringify(body), ...opts }),
 };
 
 // ─── Auth API ─────────────────────────────────────────────────────────────────
 
 export const authApi = {
-  register: (data) => api.post("/api/auth/register", data),
-  login:    (data) => api.post("/api/auth/login", data),
-  logout:   ()     => api.post("/api/auth/logout"),
-  me:       ()     => api.get("/api/auth/me"),
+  register:  (data) => api.post("/api/auth/register", data),
+  login:     (data) => api.post("/api/auth/login", data),
+  logout:    ()     => api.post("/api/auth/logout"),
+  logoutAll: ()     => api.post("/api/auth/logout-all"),
+  me:        ()     => api.get("/api/auth/me"),
 
   // Восстановление сессии при загрузке приложения через refresh cookie
   async restoreSession() {

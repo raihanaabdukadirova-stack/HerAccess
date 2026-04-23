@@ -125,8 +125,10 @@ export default function LessonPage({ lesson, setPage }) {
             </div>
             <QuizEngine
               questions={questions}
-              subject={sd.label}
-              levelTitle={level.title}
+              subject={sd.label}        // display: "Physics"
+              subjectKey={subject}      // DB key: "physics"
+              levelTitle={level.title}  // display: "Elementary Physics"
+              levelId={level.id}        // DB id: "ph1"
               onBack={() => setPage("subjects")}
               onComplete={(s, t) => {
                 recordTestScore("lesson_quiz", s, t, `${sd.label}—${level.title}`);

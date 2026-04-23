@@ -7,7 +7,6 @@ export default function ProfilePage({ user, setUser, setPage }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Секции
   const [editingName, setEditingName] = useState(false);
   const [nameVal, setNameVal] = useState("");
   const [nameLoading, setNameLoading] = useState(false);
@@ -59,11 +58,11 @@ export default function ProfilePage({ user, setUser, setPage }) {
     setPwLoading(true); setPwError(""); setPwSuccess("");
     try {
       await profileApi.changePassword(pwForm);
+      // Немедленно инвалидируем токен — сервер уже удалил все сессии
+      clearAccessToken();
       setPwSuccess("Password changed. Please log in again.");
       setPwForm({ currentPassword: "", newPassword: "" });
-      // Разлогиниваем через 2 секунды
-      setTimeout(async () => {
-        clearAccessToken();
+      setTimeout(() => {
         STORE.user = null;
         setUser(null);
         setPage("login");
@@ -83,6 +82,15 @@ export default function ProfilePage({ user, setUser, setPage }) {
         ...d,
         sessions: d.sessions.filter((s) => s.id !== sessionId),
       }));
+    } catch {}
+  }
+
+  // ── Отозвать все остальные сессии ────────────────────────────────────────────
+  async function revokeAllOtherSessions() {
+    try {
+      await authApi.logoutAll();
+      // Оставляем только первую запись (текущая сессия) в UI
+      setData((d) => ({ ...d, sessions: d.sessions.slice(0, 1) }));
     } catch {}
   }
 
@@ -273,12 +281,7 @@ export default function ProfilePage({ user, setUser, setPage }) {
             <button
               className="btn btn-o"
               style={{ marginTop: 12, fontSize: 13, padding: "8px 18px" }}
-              onClick={async () => {
-                try {
-                  await authApi.logoutAll?.() ?? profileApi.deleteSession("all");
-                  setData((d) => ({ ...d, sessions: d.sessions.slice(0, 1) }));
-                } catch {}
-              }}
+              onClick={revokeAllOtherSessions}
             >
               Revoke All Other Sessions
             </button>
