@@ -22,7 +22,8 @@ export function errorHandler(err, req, res, next) {
     console.error("[ERROR]", err);
   }
 
-  res.status(status).json({ error: message });
+  const clientMessage = status >= 500 ? "Internal server error." : message;
+  res.status(status).json({ error: clientMessage });
 }
 
 /**

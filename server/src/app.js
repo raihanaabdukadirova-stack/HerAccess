@@ -38,7 +38,7 @@ app.use(express.json());
 app.use(cookieParser());
 
 // ─── Logging ──────────────────────────────────────────────────────────────────
-if (process.env.NODE_ENV !== "test") {
+if (process.env.NODE_ENV === "development") {
   app.use(morgan("dev"));
 }
 

@@ -1,9 +1,9 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import 'dotenv/config';
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-// gemini-1.5-flash — быстрый и дешёвый, подходит для всех задач платформы
-const MODEL = 'gemini-1.5-flash';
+const MODEL = process.env.GEMINI_MODEL;
 
 async function callGemini(system, userMsg, maxTokens = 1200) {
   const model = genAI.getGenerativeModel({
@@ -15,16 +15,37 @@ async function callGemini(system, userMsg, maxTokens = 1200) {
     },
   });
 
-  const result = await model.generateContent(userMsg);
-  const response = result.response;
+  try {
+    const result = await model.generateContent(userMsg);
+    const response = result.response;
 
-  if (!response) {
-    const err = new Error('Gemini returned empty response');
-    err.status = 502;
-    throw err;
+    if (!response) {
+      const err = new Error('Gemini returned empty response');
+      err.status = 502;
+      throw err;
+    }
+
+    return response.text();
+  } catch (error) {
+    // Обрабатываем специфичные ошибки Gemini API
+    if (error.message?.includes('API key')) {
+      const err = new Error('AI service configuration error');
+      err.status = 500;
+      throw err;
+    }
+    if (error.message?.includes('quota') || error.message?.includes('rate limit')) {
+      const err = new Error('AI service rate limit reached. Please try again in a moment.');
+      err.status = 429;
+      throw err;
+    }
+    if (error.status === 503 || error.message?.includes('unavailable')) {
+      const err = new Error('AI service temporarily unavailable');
+      err.status = 503;
+      throw err;
+    }
+    // Оригинальная ошибка прокидывается дальше
+    throw error;
   }
-
-  return response.text();
 }
 
 // POST /api/ai/chat
@@ -36,8 +57,17 @@ export async function chatController(req, res) {
     return res.status(422).json({ error: 'message is required.' });
   }
 
-  const text = await callGemini(system, message, maxTokens);
-  res.json({ text });
+  try {
+    const text = await callGemini(system, message, maxTokens);
+    res.json({ text });
+  } catch (error) {
+    // Передаём статус и сообщение клиенту
+    const status = error.status || 500;
+    const message = error.message || 'AI request failed';
+
+    console.error('[AI Error]', status, message, error);
+    res.status(status).json({ error: message });
+  }
 }
 
 // POST /api/ai/quiz
@@ -57,7 +87,10 @@ export async function quizController(req, res) {
     );
     const questions = JSON.parse(raw.replace(/```json|```/g, '').trim());
     res.json({ questions });
-  } catch {
+  } catch (error) {
+    console.error('[Quiz Gen Error]', error);
+
+    // Не блокируем урок — клиент покажет fallback
     const questions = topics.slice(0, count).map((t) => ({
       q: `Key concept in "${t}"?`,
       opts: ['Option A', 'Option B (correct)', 'Option C', 'Option D'],
@@ -88,7 +121,9 @@ export async function weaknessQuizController(req, res) {
     );
     const questions = JSON.parse(raw.replace(/```json|```/g, '').trim());
     res.json({ questions });
-  } catch {
+  } catch (error) {
+    console.error('[Weakness Quiz Error]', error);
+
     const questions = weakTopics.slice(0, 5).map((w) => ({
       q: `Review: what is key about "${w.topic.split(':')[1] || w.topic}"?`,
       opts: ['Option A', 'Option B', 'Option C', 'Option D'],
@@ -117,7 +152,8 @@ export async function essayController(req, res) {
     );
     const result = JSON.parse(raw.replace(/```json|```/g, '').trim());
     res.json(result);
-  } catch {
+  } catch (error) {
+    console.error('[Essay Check Error]', error);
     res.status(502).json({ error: 'Could not evaluate essay. Please try again.' });
   }
 }

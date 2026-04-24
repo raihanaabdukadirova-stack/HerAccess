@@ -14,7 +14,7 @@ Built with React + Node.js + PostgreSQL. Deployed on Vercel.
 | Backend    | Node.js 20 (ESM), Express 4, Vercel Serverless |
 | Database   | PostgreSQL 15+ (Neon), Prisma 5                |
 | Auth       | JWT access token (15m) + refresh (30d)         |
-| AI         | Anthropic Claude (proxied through server)      |
+| AI         | Google Gemini Flash (proxied through server)   |
 | Media      | Cloudflare R2 (videos + audio)                 |
 | Validation | express-validator                              |
 | Security   | helmet, cors, bcryptjs, rate-limit             |
@@ -117,7 +117,7 @@ cd ../server && npm install
 # Server
 cd server
 cp .env.example .env
-# Заполни: DATABASE_URL, JWT_ACCESS_SECRET, JWT_REFRESH_SECRET, ANTHROPIC_API_KEY
+# Заполни: DATABASE_URL, JWT_ACCESS_SECRET, JWT_REFRESH_SECRET, GEMINI_API_KEY
 
 # Client — в dev Vite proxy уже перенаправляет /api → localhost:4000
 # .env файл для клиента не нужен локально
@@ -171,7 +171,6 @@ client/public/media/
 ```
 
 Если файла нет — плеер показывает корректный fallback, квизы работают в любом случае.
-Полный список имён файлов — в [MEDIA.md](./MEDIA.md).
 
 ---
 
@@ -231,7 +230,7 @@ npx vercel
 | `DATABASE_URL`       | Строка подключения Neon с `?sslmode=require`         |
 | `JWT_ACCESS_SECRET`  | 64-символьная случайная строка                       |
 | `JWT_REFRESH_SECRET` | 64-символьная случайная строка (другая)              |
-| `ANTHROPIC_API_KEY`  | Ключ Anthropic `sk-ant-...`                          |
+| `GEMINI_API_KEY`     | Ключ Google AI Studio `AIza...`                      |
 | `CLIENT_URL`         | URL клиента, например `https://heraccess.vercel.app` |
 | `NODE_ENV`           | `production`                                         |
 
