@@ -7,7 +7,7 @@
   "scripts": {
     "dev": "node --watch src/app.js",
     "start": "node src/app.js",
-    "postinstall": "prisma generate",
+    "postinstall": "prisma generate || true",
     "db:migrate": "prisma migrate deploy",
     "db:migrate:dev": "prisma migrate dev",
     "db:generate": "prisma generate",
@@ -16,7 +16,7 @@
   },
   "dependencies": {
     "@google/generative-ai": "^0.21.0",
-    "@prisma/client": "^5.14.0",
+    "@prisma/client": "^6.6.0",
     "bcryptjs": "^2.4.3",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
@@ -29,6 +29,6 @@
     "morgan": "^1.10.0"
   },
   "devDependencies": {
-    "prisma": "^7.8.0"
+    "prisma": "^6.6.0"
   }
 }
