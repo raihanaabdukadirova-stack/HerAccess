@@ -1,0 +1,146 @@
+// Raw test data for seeding. Keeps seed.js clean.
+// Format already matches DB Question model (after transformation from client data).
+
+function mapSat(q) {
+  return {
+    orderIndex: q.id - 1,
+    type: q.type,
+    section: q.section,
+    questionText: q.q,
+    options: q.opts ?? null,
+    correctAnswer: q.type === "mcq" ? q.opts[q.ans] : q.correctAns,
+    explanation: q.exp,
+  };
+}
+
+const RAW_EXAM1 = [
+  { id: 1, type: "grid", section: "Geometry", q: "In triangle RST, angle R=10° and angle T=50°. Point L lies on RS, point K on ST, and LK is parallel to RT. What is the measure of angle SKL in degrees?", correctAns: "50", exp: "Since LK∥RT, corresponding angles: ∠SKL = ∠T = 50°." },
+  { id: 2, type: "mcq", section: "Advanced Math", q: "The expression x²⁰(x−4)/(5x²) + 4x²⁰/(5x²) is equivalent to (1/5)xᶜ where x>0. What is c?", opts: ["4", "5", "19", "21"], ans: 2, exp: "Simplify: x²¹/(5x²) = (1/5)x¹⁹. So c = 19." },
+  { id: 3, type: "mcq", section: "Algebra", q: "Which region contains NO solutions to 7x + 4y > 12?", opts: ["x>0 and y>0", "x<0 and y>0", "x<0 and y<0", "x>0 and y<0"], ans: 2, exp: "If both x<0 and y<0, then 7x+4y<0<12. No solutions." },
+  { id: 4, type: "mcq", section: "Geometry", q: "(x+3)²+(y−4)²=25. Which point lies on this circle?", opts: ["(−3, 4)", "(3, −4)", "(√11+3, √14−4)", "(√11−3, √14+4)"], ans: 3, exp: "Test (√11−3, √14+4): (√11)²+(√14)²=11+14=25 ✓" },
+  { id: 5, type: "mcq", section: "Advanced Math", q: "y = −100x² + 2400x + 25600 models revenue. At what x is revenue maximized?", opts: ["8", "12", "24", "32"], ans: 1, exp: "Vertex at x = −b/2a = 2400/200 = 12." },
+  { id: 6, type: "mcq", section: "Advanced Math", q: "Object launched from 0 ft reaches max height 1782 ft at t=9 sec. Height at t=12 sec?", opts: ["594", "778", "1,584", "970"], ans: 2, exp: "h(t)=−22(t−9)²+1782. h(12)=−22(9)+1782=1,584 ft." },
+  { id: 7, type: "grid", section: "Geometry", q: "Two similar cylinders: Vol A=300π (r=10), Vol B=37500π. SA_A=kπ, SA_B=nπ. Find n−k.", correctAns: "6240", exp: "Scale=5. k=260, n=6500. n−k=6240." },
+  { id: 8, type: "mcq", section: "Algebra", q: "12-lb cat: chicken 2.25 cans/8 lbs/day, duck 1.75 cans/9 lbs/day. Equation for c (chicken) and d (duck)?", opts: ["(1.75/9)c+(2.25/8)d=12", "(2.25/8)c+(1.75/9)d=12", "(9/1.75)c+(8/2.25)d=12", "(8/2.25)c+(9/1.75)d=12"], ans: 3, exp: "Each chicken can covers 8/2.25 lbs; duck covers 9/1.75 lbs." },
+  { id: 9, type: "grid", section: "Advanced Math", q: "y=aˣ−b passes through (c,7) and (2c,247). What is b?", correctAns: "9", exp: "(7+b)²=247+b → b=9 or b=−22. b=9 works: aᶜ=16, a²ᶜ=256=247+9 ✓" },
+  { id: 10, type: "grid", section: "Advanced Math", q: "(x+9) is a factor of f(x). Vertex is (−2.75, d). What is the other zero c?", correctAns: "3.5", exp: "Midpoint of zeros = vertex x: (−9+c)/2=−2.75 → c=3.5." },
+  { id: 11, type: "mcq", section: "Data Analysis", q: "325 visitors in rooms A, B, C. P(A)=0.48, P(B)=0.16. How many in room C?", opts: ["25", "36", "104", "117"], ans: 3, exp: "P(C)=0.36. 0.36×325=117." },
+  { id: 12, type: "grid", section: "Algebra", q: "19.5x + 29.75y = 394 (mulch x, river rock y). How much more per unit did river rock cost than mulch?", correctAns: "10.25", exp: "29.75−19.50=10.25." },
+  { id: 13, type: "mcq", section: "Algebra", q: "Bus: $750 for first 2 hrs, $50/hr after. Total for t hrs = $1050. Equation?", opts: ["750(t−2)+50t=1050", "750(2t)+50t=1050", "750+50(t−2)=1050", "750+50(2t)=1050"], ans: 2, exp: "750 + 50(t−2) = 1050." },
+  { id: 14, type: "mcq", section: "Geometry", q: "Right △RST: R+S=90°. sin(R)=4√2/9. What is cos(S)?", opts: ["4√2/9", "4√2/7", "7√2/8", "9√2/8"], ans: 0, exp: "Complementary angles: cos(S)=sin(R)=4√2/9." },
+  { id: 15, type: "mcq", section: "Algebra", q: "g(m)=−0.05m+14.1 models gallons remaining. Gallons used per mile?", opts: ["0.05", "14.1", "20", "282"], ans: 0, exp: "Slope=−0.05 → 0.05 gallons per mile." },
+  { id: 16, type: "grid", section: "Algebra", q: "Bank account graph: y=f(x) shows balance after x months. What is the initial deposit (y-intercept)?", correctAns: "10", exp: "The y-intercept (x=0) from the graph ≈ $10." },
+  { id: 17, type: "grid", section: "Advanced Math", q: "y=900ax². Rope of 2.25 in circumference has strength 6378.75 lbs. Strength of 3.50 in rope?", correctAns: "15435", exp: "a=1.4. y=900(1.4)(12.25)=15,435 lbs." },
+  { id: 18, type: "grid", section: "Algebra", q: "48x+96=r(3x+6). r is a positive integer. If more than one solution exists, what is r?", correctAns: "16", exp: "3r=48 → r=16. Check: 6r=96 ✓" },
+  { id: 19, type: "mcq", section: "Algebra", q: "0.5t+4=8 models hair growth. Best interpretation of 0.5?", opts: ["Months to grow 1 inch", "Inches grown per month", "Months to reach 8 inches", "Inches grown in 8 months"], ans: 1, exp: "0.5 is the rate: 0.5 inches per month." },
+  { id: 20, type: "grid", section: "Geometry", q: "Right circular cone: slant height AB=56 cm, height=28 cm. Volume=kπ cm³. Find k.", correctAns: "21952", exp: "r=28√3. V=(1/3)π(2352)(28)=21952π." },
+  { id: 21, type: "grid", section: "Data Analysis", q: "Momentum graph: at x=2 momentum≈4, at x=6 momentum≈7. Average rate of change from x=2 to x=6?", correctAns: "0.75", exp: "(7−4)/(6−2)=3/4=0.75 N·s per second." },
+  { id: 22, type: "grid", section: "Geometry", q: "△PQR: P=(7x+9)°, Q=(3x+8)°, R=(4y+3)°. QR extended to S; ∠PRS=(x+y)°. Find x+y.", correctAns: "37", exp: "x=2, y=35 via exterior angle theorem. x+y=37." },
+  { id: 23, type: "grid", section: "Advanced Math", q: "Object from 0 ft, max height 1600 ft at t=10 sec. Height at t=7 sec?", correctAns: "1456", exp: "h(t)=−16(t−10)²+1600. h(7)=−144+1600=1456 ft." },
+  { id: 24, type: "mcq", section: "Advanced Math", q: "f(x)=ax²+bx+c passes through (10,0) and (−3,0). a is integer >1. Which could be a+b?", opts: ["−12", "−6", "7", "8"], ans: 0, exp: "b=−7a. a+b=−6a. If a=2: −12." },
+  { id: 25, type: "mcq", section: "Algebra", q: "For x>0, f(x)=300% of x. Which describes this function?", opts: ["Decreasing exponential", "Decreasing linear", "Increasing exponential", "Increasing linear"], ans: 3, exp: "f(x)=3x is increasing and linear." },
+  { id: 26, type: "grid", section: "Data Analysis", q: "2000 attended webinar 1. 65% attended webinar 2. Of those who skipped webinar 2, 31% attended webinar 3. How many attended 1 and 3 but NOT 2?", correctAns: "217", exp: "Skipped webinar 2: 700. 31%×700=217." },
+  { id: 27, type: "mcq", section: "Data Analysis", q: "June 15: 168 butterflies. Increase from May 1=31.25%. How many on May 1?", opts: ["128", "116", "53", "5"], ans: 0, exp: "168/1.3125=128." },
+  { id: 28, type: "mcq", section: "Geometry", q: "Circle M: (x+6a)²+(y−38a)²=36a². Circle V = M shifted 12a right. Equation of V?", opts: ["(x+18a)²+(y−38a)²=36a²", "(x+6a)²+(y−50a)²=36a²", "(x+6a)²+(y−26a)²=36a²", "(x−6a)²+(y−38a)²=36a²"], ans: 3, exp: "New center: (6a, 38a). Equation: (x−6a)²+(y−38a)²=36a²." },
+  { id: 29, type: "mcq", section: "Geometry", q: "Three points define a circle with circumference kπ. From the graph, what is k?", opts: ["3", "6", "9", "12"], ans: 2, exp: "Radius=9/2. Circumference=2π(9/2)=9π. k=9." },
+  { id: 30, type: "mcq", section: "Data Analysis", q: "Set A capacitors: 4,7,10,13,16 μF. Set B = Set A + 14 μF each. True about Set B?", opts: ["Mean=10, Range=12", "Mean=10, Range=26", "Mean=24, Range=12", "Mean=24, Range=26"], ans: 2, exp: "Mean increases by 14 → 24. Range unchanged → 12." },
+  { id: 31, type: "grid", section: "Algebra", q: "Budget $2800, min 275 books. Paperback=$4.10, Hardcover=$11.10. Max hardcover books?", correctAns: "238", exp: "7h≤1672.5 → h≤238." },
+  { id: 32, type: "mcq", section: "Algebra", q: "Total mass of r identical objects is t kg. Total mass of 139r objects?", opts: ["139−t", "139+t", "t/139", "139t"], ans: 3, exp: "Each object=t/r. Total=(t/r)×139r=139t." },
+  { id: 33, type: "grid", section: "Algebra", q: "h=9(v−273.15)/5+32. If h=413.33°F, find v in kelvins.", correctAns: "485", exp: "413.33−32=381.33. ×5/9=211.85. +273.15≈485 K." },
+  { id: 34, type: "mcq", section: "Advanced Math", q: "r(t)=69t−2t². s(t)=r(t)+1. Maximum value of s(t)?", opts: ["1−(69/2)²", "1−2(69/4)²", "1+2(69/4)²", "1+(69/2)²"], ans: 2, exp: "Max of r=2(69/4)². Max of s=1+2(69/4)²." },
+  { id: 35, type: "mcq", section: "Algebra", q: "14000=2500+250t (car purchase). Best interpretation of 250?", opts: ["Down payment", "Each monthly payment", "Total paid after t months", "Number of payments"], ans: 1, exp: "250 is the per-payment amount." },
+  { id: 36, type: "grid", section: "Advanced Math", q: "C(t)=240(53/52)^(t−15)+7. When was C(t)=247?", correctAns: "15", exp: "247=240(1)^(t−15)+7 → t=15." },
+  { id: 37, type: "mcq", section: "Geometry", q: "Right triangle QRS, QR=17 (horizontal leg), QR<RS. Length of hypotenuse QS?", opts: ["17 cos Q", "17 sin Q", "17/cos Q", "17/sin Q"], ans: 2, exp: "cos Q=adjacent/hypotenuse=17/QS → QS=17/cos Q." },
+  { id: 38, type: "mcq", section: "Algebra", q: "Machine: 8-in=4n, 9-in=n, 3-in=30 parts. Total=100. Which equation?", opts: ["8(4n)+9n+3(30)=100", "8n+9n+3n=100", "4n+30=100", "5n+30=100"], ans: 3, exp: "n+4n+30=100 → 5n+30=100." },
+  { id: 39, type: "grid", section: "Geometry", q: "Regular 87-sided polygon. Each interior angle=(180p)°. Find p.", correctAns: "0.977", exp: "Each angle=15300/87≈175.86°. p=175.86/180≈0.977." },
+  { id: 40, type: "mcq", section: "Data Analysis", q: "14 salmon weights. A 68-lb salmon added (n=15). Which must be greater?\nI. Median  II. Mean", opts: ["I only", "II only", "I and II", "Neither"], ans: 1, exp: "68 lbs is far above existing values, so mean must increase. Median may not change." },
+];
+
+const RAW_EXAM2 = [
+  { id: 1, type: "grid", section: "Geometry", q: "Triangle ABC ~ triangle DEF (A↔D, right angles at C and F). AB = 2.4 × DE. If tan A = 21/20, what is sin D?", correctAns: "21/29", exp: "tan A=21/20 → opp=21, adj=20, hyp=29. sin A=21/29. Since A↔D in similar triangles, sin D = sin A = 21/29." },
+  { id: 2, type: "mcq", section: "Data Analysis", q: "A bacteria concentration graph shows growth over time. Approximately how many minutes did it take for concentration to increase from 20 to 30 million cells/mL?", opts: ["15", "20", "30", "35"], ans: 1, exp: "Reading the exponential growth graph: 20 million ≈ x=30 min; 30 million ≈ x=50 min. Difference ≈ 20 minutes." },
+  { id: 3, type: "mcq", section: "Advanced Math", q: "f(x) = |71 − 2x|. For which value of k does f(k) = 3k?", opts: ["71/5", "71/2", "213/5", "71"], ans: 0, exp: "Case 1: 71−2k=3k → k=71/5. Verify: f(71/5)=|71−142/5|=213/5 and 3(71/5)=213/5 ✓" },
+  { id: 4, type: "mcq", section: "Geometry", q: "Right rectangular prism with square base: volume=2,448 cm³, base area=144 cm². What is the area of one lateral face?", opts: ["17", "204", "540", "816"], ans: 1, exp: "h=2448/144=17. Side=√144=12. Lateral face=12×17=204 cm²." },
+  { id: 5, type: "grid", section: "Advanced Math", q: "Quadratic y=f(x) crosses x-axis at x=39 and x=p. Maximum at (14, m). What is p?", correctAns: "-11", exp: "Vertex midpoint of zeros: (39+p)/2=14 → p=−11." },
+  { id: 6, type: "grid", section: "Advanced Math", q: "(x+9) is a factor of f(x); x=c is the other zero. Vertex is (−2.75, d). What is c?", correctAns: "3.5", exp: "(−9+c)/2=−2.75 → c=3.5." },
+  { id: 7, type: "grid", section: "Advanced Math", q: "Vertex of f(x) is (8,−10). Point (7,−12) lies on the parabola. g(x)=4f(x). What is g(0)−f(0)?", correctAns: "-414", exp: "f(x)=a(x−8)²−10. f(7)=a−10=−12 → a=−2. f(0)=−2(64)−10=−138. g(0)=4(−138)=−552. g(0)−f(0)=−414." },
+  { id: 8, type: "grid", section: "Geometry", q: "cos A = sin B for acute angles. ∠A=5x+10°, ∠B=40+3x°. What is x?", correctAns: "5", exp: "cos A=sin B means A+B=90°. (5x+10)+(40+3x)=90 → 8x=40 → x=5." },
+  { id: 9, type: "mcq", section: "Algebra", q: "Math tutor: $200 for first month, $150 each additional month. Total revenue R(m) for m months and n students?", opts: ["R=150mn+50", "R=150mn+200", "R=150mn+50n", "R=150mn+200n"], ans: 2, exp: "Per student for m months: 200+150(m−1)=150m+50. For n students: n(150m+50)=150mn+50n." },
+  { id: 10, type: "grid", section: "Data Analysis", q: "Scatter plot: temperatures (°C) for days after Feb 10. At day 3 (Feb 13)≈8°C, day 5 (Feb 15)≈10°C. Average increase per day?", correctAns: "1", exp: "Change=10−8=2°C over 2 days. Rate=1°C per day." },
+  { id: 11, type: "grid", section: "Algebra", q: "Table: (−11,−25) and (9,55). Line passes through (1/3, a). What is a? (Round to nearest tenth)", correctAns: "20.3", exp: "Slope=(55+25)/(9+11)=4. y-int: 55=36+b → b=19. y=4x+19. At x=1/3: y=4/3+19≈20.3." },
+  { id: 12, type: "grid", section: "Data Analysis", q: "1,250 attended webinar 1. 68% attended webinar 2. 32% of those who attended 1 and 2 attended webinar 3. How many attended all three?", correctAns: "272", exp: "Webinar 2: 0.68×1250=850. All three: 0.32×850=272." },
+  { id: 13, type: "mcq", section: "Advanced Math", q: "Graph of y=f(x) shown (y-intercept=1). What is the y-intercept of y=f(x)+13?", opts: ["(0,−12)", "(0,14)", "(1,13)", "(1,14)"], ans: 1, exp: "f(0)=1 (from graph). f(0)+13=14. y-intercept is (0,14)." },
+  { id: 14, type: "mcq", section: "Algebra", q: "Minimum value of x is 11 less than 8 times n. Which shows possible values of x?", opts: ["x ≤ 8n−11", "x ≥ 8n−11", "x ≤ 11−8n", "x ≥ 11−8n"], ans: 1, exp: "Minimum of x = 8n−11 → x ≥ 8n−11." },
+  { id: 15, type: "mcq", section: "Algebra", q: "Shaded region shows solutions to −18y < c. Boundary line appears at y=−9. What is c?", opts: ["162", "9", "−9", "−162"], ans: 3, exp: "At boundary y=−9: c=−18(−9)=162. Shading is below y=−9 (y<−9), so −18y>162 → c=−162." },
+  { id: 16, type: "mcq", section: "Geometry", q: "Right triangle RST: RS=168, ST=160, TR=232. △RST ~ △UVW (S↔V, T↔W). What is tan W?", opts: ["20/29", "21/29", "20/21", "21/20"], ans: 3, exp: "Right angle at S. tan T=RS/ST=168/160=21/20. Since T↔W, tan W=21/20." },
+  { id: 17, type: "mcq", section: "Algebra", q: "−3|x−3| = −9x. What are all solutions?", opts: ["−3/2", "3/4", "−3/2 and 3/4", "3/4 and 3/2"], ans: 1, exp: "|x−3|=3x. Case 2: −(x−3)=3x → 3=4x → x=3/4 ✓. Case 1: x=−3/2 fails (3x<0). Only x=3/4." },
+  { id: 18, type: "mcq", section: "Advanced Math", q: "z(w)=(0.825)^(2w). z decreases by p% for each increase of 1 in w. What is p?", opts: ["31.9", "17.5", "0.825", "0.175"], ans: 0, exp: "z(w+1)/z(w)=(0.825)²=0.6806. Decrease=31.9%." },
+  { id: 19, type: "mcq", section: "Geometry", q: "x²−4x+y²−8y−80=0. Circle inscribed in a square. What is the perimeter?", opts: ["20", "40", "80", "320"], ans: 2, exp: "(x−2)²+(y−4)²=100. r=10. Side=20. Perimeter=80." },
+  { id: 20, type: "mcq", section: "Advanced Math", q: "Which are factors of 4x²+27x−40?\nI. x−8\nII. 4x−5", opts: ["I only", "II only", "I and II", "Neither I nor II"], ans: 1, exp: "4x²+27x−40=(4x−5)(x+8). Factor II (4x−5) ✓. Factor I (x−8) ✗." },
+  { id: 21, type: "mcq", section: "Geometry", q: "Right circular cone: volume=75,600π cm³, base area=3,600π cm². What is the slant height (cm)?", opts: ["21", "60", "63", "87"], ans: 3, exp: "r=60, h=63. Slant=√(3600+3969)=√7569=87." },
+  { id: 22, type: "mcq", section: "Advanced Math", q: "Exponential f: f(1)=k. Which form shows k as the coefficient?\n(A)35(1.6)^(x+1) (B)56(1.6)^x (C)89.6(1.6)^(x−1) (D)143.36(1.6)^(x−2)", opts: ["f(x)=35(1.6)^(x+1)", "f(x)=56(1.6)^x", "f(x)=89.6(1.6)^(x−1)", "f(x)=143.36(1.6)^(x−2)"], ans: 2, exp: "f(1)=89.6(1.6)⁰=89.6=k. k appears as the coefficient. Answer C." },
+  { id: 23, type: "mcq", section: "Algebra", q: "Line k has slope −4/3. Line j is perpendicular to k through (−20,−25). Equation of j?", opts: ["y=(3/4)x−10", "y=(3/4)x−40", "y=(4/3)x−10", "y=(4/3)x−40"], ans: 0, exp: "Perpendicular slope=3/4. y+25=(3/4)(x+20) → y=(3/4)x−10." },
+  { id: 24, type: "mcq", section: "Data Analysis", q: "11 temps recorded. 77.2°F removed → 10 temps. Which must be true?\nI. New mean < original mean\nII. New median < original median", opts: ["I only", "II only", "I and II", "Neither I nor II"], ans: 0, exp: "Removing a high value lowers the mean (I ✓). Median shift depends on distribution — not guaranteed (II ✗)." },
+  { id: 25, type: "mcq", section: "Algebra", q: "f(x)=50x+24: distance a train traveled x hours after crossing a city border. Best interpretation of 24?", opts: ["Distance of 24 km between station and city border", "Speed of 24 km/h after border", "Total 24 km traveled after border", "Speed of 24 km/h between station and border"], ans: 0, exp: "24 is the y-intercept (x=0): distance already traveled at border = 24 km between station and city border." },
+  { id: 26, type: "mcq", section: "Geometry", q: "Rectangle inscribed in circle: diagonal = 2 × shortest side. Circumference = 114π. Area of rectangle?", opts: ["57√2", "57√3", "3,249√2", "3,249√3"], ans: 3, exp: "r=57, diagonal=114=2s → s=57. l=s√3=57√3. Area=s·l=57·57√3=3249√3." },
+  { id: 27, type: "mcq", section: "Geometry", q: "x²−6x+y²−4y−51=0. Circle inscribed in a square. Perimeter of square?", opts: ["16", "32", "64", "204"], ans: 2, exp: "(x−3)²+(y−2)²=64. r=8. Side=16. Perimeter=64." },
+  { id: 28, type: "mcq", section: "Advanced Math", q: "f(x)=k(1.83)^x increases p% per unit x. Which g(x) increases p% per 1/4 unit increase in x?", opts: ["g(x)=k(1.83^x)^(1/4)", "g(x)=k(1.83^x)^4", "g(x)=k(1.83)^(x+1/4)", "g(x)=k(1.83)^(x−1/4)"], ans: 1, exp: "Need g(x+1/4)/g(x)=1.83. If g=k·b^x, then b^(1/4)=1.83 → b=1.83⁴=(1.83^x)⁴. So g(x)=k(1.83^x)^4." },
+  { id: 29, type: "grid", section: "Geometry", q: "Line intersects two parallel lines: acute angle=(9x−490)°. Sum of 1 acute + 3 obtuse = (−18x+w)°. What is w?", correctAns: "1520", exp: "Obtuse=180−(9x−490)=670−9x. Sum=(9x−490)+3(670−9x)=−18x+1520. w=1520." },
+  { id: 30, type: "grid", section: "Advanced Math", q: "f(x)=abˣ. If f(n+1)=f(n)+(82/100)f(n), what is b?", correctAns: "1.82", exp: "f(n+1)=1.82f(n). Since f(n+1)=ab^(n+1) and f(n)=ab^n, ratio=b=1.82." },
+  { id: 31, type: "grid", section: "Advanced Math", q: "y=900ax². Circumference 1.75 in → 3,858.75 lbs. What is strength for 7.50 in rope?", correctAns: "70875", exp: "a: 3858.75=900a(1.75²)=2756.25a → a=1.4. y=900(1.4)(56.25)=70,875." },
+  { id: 32, type: "grid", section: "Algebra", q: "x ≥ −9 represents all solutions to ax−24 ≤ 21. Greatest possible value of a?", correctAns: "-5", exp: "ax ≤ 45. For x≥−9: divide by a (negative flips): x≥45/a → 45/a=−9 → a=−5." },
+  { id: 33, type: "grid", section: "Geometry", q: "AB=√61, AC=5, CE=35. Right angles at C and E. What is the area of triangle ADE?", correctAns: "960", exp: "BC=√(61−25)=6. AE=40. Scale=40/5=8. DE=48. Area=½×40×48=960." },
+  { id: 34, type: "grid", section: "Algebra", q: "Graph of line g (passes through (0,2) and (1,0), slope=−2). Line k: 154x+py=w is the same line. What is p+w?", correctAns: "231", exp: "y=−2x+2 → 2x+y=2. ×77: 154x+77y=154. p=77, w=154. p+w=231." },
+  { id: 35, type: "mcq", section: "Algebra", q: "9x+8y=5. Which could be another equation in a system with at least one solution?\nI. 13.5x+12y=7.5\nII. 13.5x−12y=7.5", opts: ["I only", "II only", "I and II", "Neither I nor II"], ans: 2, exp: "I: 1.5× equation 1 → infinite solutions ✓. II: different slope → one solution ✓. Both valid." },
+  { id: 36, type: "mcq", section: "Algebra", q: "Table: (−12,44),(a,14),(2,b). Linear, y-intercept=(0,−16). What is a+b?", opts: ["−32", "−31", "−22", "−21"], ans: 0, exp: "Slope=−5 (from (0,−16) and (−12,44)). y=−5x−16. a=−6, b=−26. a+b=−32." },
+  { id: 37, type: "mcq", section: "Advanced Math", q: "CV²/P=√(PR). When R=18, express P in terms of C and V.", opts: ["P=CV²/√(18P)", "P=CV²/√18", "P=∛(C²V⁴/18)", "P=∛(18/(C²V⁴))"], ans: 2, exp: "Square both sides: C²V⁴/P²=18P → P³=C²V⁴/18 → P=∛(C²V⁴/18)." },
+  { id: 38, type: "mcq", section: "Advanced Math", q: "f(n)=7(20.44)^(n/4). Term at position 14 is p% more than term at position 10. What is p?", opts: ["20.44", "44", "1,944", "2,044"], ans: 2, exp: "Ratio=f(14)/f(10)=(20.44)^(4/4)=20.44. p=(20.44−1)×100=1944%." },
+  { id: 39, type: "mcq", section: "Geometry", q: "Right square pyramid: total SA=28,160 in², lateral SA=16,060 in². What is the height (inches)?", opts: ["48", "55", "73", "110"], ans: 0, exp: "Base SA=12100, side=110. Each face=4015=½×110×l → l=73. h=√(73²−55²)=√2304=48." },
+  { id: 40, type: "grid", section: "Advanced Math", q: "6x⁴+17x²+7=(3x²+a)(2x²+b) with a,b positive integers, also =(3x²+c)(2x²+d) with c,d positive nonintegers. What is a+c?", correctAns: "10.5", exp: "Integer: (3x²+7)(2x²+1)=6x⁴+17x²+7 ✓ → a=7. Noninteger: solve 3d+2c=17, cd=7/6; c=7/2=3.5. a+c=7+3.5=10.5." },
+];
+
+const RAW_IELTS_QUESTIONS = [
+  { id: "q1", text: "Average decline in native bird species near urban areas?", options: ["24%", "34%", "44%", "54%"], answer: "34%", explanation: "Paragraph 1: 'declined by an average of 34%'" },
+  { id: "q2", text: "'Urban adapters' refers to:", options: ["City planners", "Species thriving in cities", "Endangered birds", "Environmental policies"], answer: "Species thriving in cities", explanation: "Defined as organisms showing 'remarkable plasticity in adjusting to city environments'" },
+  { id: "q3", text: "Which is TRUE about green corridors?", options: ["Only effective in large cities", "Eliminate biodiversity loss", "Allow species to migrate through cities", "Opposed by policymakers"], answer: "Allow species to migrate through cities", explanation: "'Allow species to migrate safely through urban matrices'" },
+  { id: "q4", text: "Green infrastructure supports up to what % of native species?", options: ["40%", "50%", "60%", "70%"], answer: "60%", explanation: "'Can support up to 60% of native species'" },
+  { id: "q5", text: "Author's tone presenting critics' views?", options: ["Dismissive", "Balanced and objective", "Strongly supportive", "Sarcastic"], answer: "Balanced and objective", explanation: "Critics' views are presented fairly without dismissal" },
+];
+
+export const SAT_MATH_EXAM_1 = {
+  title: "SAT Math – Exam 1",
+  type: "sat_math",
+  timeLimit: 3600,
+  isPublished: true,
+  questions: RAW_EXAM1.map(mapSat),
+};
+
+export const SAT_MATH_EXAM_2 = {
+  title: "SAT Math – Exam 2",
+  type: "sat_math",
+  timeLimit: 3600,
+  isPublished: true,
+  questions: RAW_EXAM2.map(mapSat),
+};
+
+export const IELTS_READING_TEST = {
+  title: "The Impact of Urbanization on Biodiversity",
+  type: "ielts_reading",
+  isPublished: true,
+  description: `Urban expansion has become one of the most significant drivers of biodiversity loss worldwide. As cities grow, natural habitats are fragmented, forcing wildlife into increasingly isolated patches. Research across twelve major cities found native bird species declined by 34% within a decade of urban development reaching their habitat boundaries.
+
+However, not all species suffer. "Urban adapters" show remarkable plasticity — the peregrine falcon rebounded by nesting on skyscrapers; foxes colonized European cities exploiting food waste.
+
+Green corridors — vegetation strips connecting parks — allow species to migrate through urban areas. Studies in Singapore and Melbourne show well-designed green infrastructure can support up to 60% of native species found rurally.
+
+"Biophilic cities" designed to foster human-nature interaction have gained traction among policymakers. Critics caution that parks cannot replicate natural ecosystem complexity, and habitat destruction must be addressed through land-use policy.`,
+  questions: RAW_IELTS_QUESTIONS.map((q, i) => ({
+    orderIndex: i,
+    type: "mcq",
+    section: "Reading",
+    questionText: q.text,
+    options: q.options,
+    correctAnswer: q.answer,
+    explanation: q.explanation,
+  })),
+};

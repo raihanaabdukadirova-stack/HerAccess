@@ -7,6 +7,7 @@ import helmet from 'helmet';
 import morgan from 'morgan';
 
 import { errorHandler } from './middleware/errorHandler.js';
+import { maintenanceCheck } from './middleware/maintenance.js';
 import adminRoutes from './modules/admin/admin.routes.js';
 import aiRoutes from './modules/ai/ai.routes.js';
 import authRoutes from './modules/auth/auth.routes.js';
@@ -45,6 +46,9 @@ if (process.env.NODE_ENV === 'development' || process.env.LOG_LEVEL === 'debug')
 
 // ─── Routes ───────────────────────────────────────────────────────────────────
 app.get('/health', (_req, res) => res.json({ status: 'ok' }));
+
+// Maintenance gate — checked before all /api routes; ADMIN bypasses it
+app.use('/api', maintenanceCheck);
 
 app.use('/api/auth', authLimiter, authRoutes);
 app.use('/api/progress', progressRoutes);

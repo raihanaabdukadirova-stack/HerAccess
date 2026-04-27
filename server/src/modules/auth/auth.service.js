@@ -66,6 +66,13 @@ export async function login({ email, password }) {
     throw err;
   }
 
+  if (user.banned) {
+    const err = new Error(user.banReason || "Your account has been suspended.");
+    err.status = 403;
+    err.code = "ACCOUNT_BANNED";
+    throw err;
+  }
+
   const accessToken = signAccessToken(user);
   const refreshToken = await createRefreshToken(user.id);
 

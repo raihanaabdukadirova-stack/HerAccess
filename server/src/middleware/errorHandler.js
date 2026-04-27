@@ -23,7 +23,9 @@ export function errorHandler(err, req, res, next) {
   }
 
   const clientMessage = status >= 500 ? "Internal server error." : message;
-  res.status(status).json({ error: clientMessage });
+  const body = { error: clientMessage };
+  if (err.code && status < 500) body.code = err.code;
+  res.status(status).json(body);
 }
 
 /**

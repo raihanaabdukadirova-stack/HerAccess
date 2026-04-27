@@ -15,6 +15,9 @@ model User {
   email        String   @unique
   passwordHash String
   role         Role     @default(STUDENT)
+  banned       Boolean  @default(false)
+  bannedAt     DateTime?
+  banReason    String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -24,6 +27,7 @@ model User {
   mistakes      Mistake[]
   testScores    TestScore[]
   createdTests  Test[]
+  aiLogs        AILog[]
 
   @@map("users")
 }
@@ -97,7 +101,7 @@ model TestScore {
   @@map("test_scores")
 }
 
-// ─── Admin: Tests & Questions ─────────────────────────────────────────────────
+// ─── Admin: Tests & Questions (legacy / generic) ──────────────────────────────
 
 model Test {
   id          String     @id @default(cuid())
@@ -135,4 +139,150 @@ model Question {
 
   @@index([testId])
   @@map("questions")
+}
+
+// ─── Content: Subjects & Levels ──────────────────────────────────────────────
+
+model Subject {
+  id        String   @id @default(cuid())
+  key       String   @unique // "physics", "math"
+  icon      String
+  color     String
+  label     String
+  order     Int      @default(0)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  levels Level[]
+
+  @@map("subjects")
+}
+
+model Level {
+  id         String  @id @default(cuid())
+  levelId    String  // "ph1", "ma2"
+  subjectKey String
+  emoji      String
+  title      String
+  topics     String[] // массив строк
+  order      Int     @default(0)
+  isActive   Boolean @default(true)
+
+  subject Subject @relation(fields: [subjectKey], references: [key], onDelete: Cascade)
+
+  @@unique([subjectKey, levelId])
+  @@index([subjectKey])
+  @@map("levels")
+}
+
+// ─── Content: SAT ────────────────────────────────────────────────────────────
+
+model SATExam {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  timeLimit   Int      @default(3600) // секунды
+  isActive    Boolean  @default(true)
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  questions SATQuestion[]
+
+  @@map("sat_exams")
+}
+
+model SATQuestion {
+  id          String   @id @default(cuid())
+  examId      String
+  order       Int
+  type        String   // "mcq" | "grid"
+  section     String   // "Algebra" | "Advanced Math" | "Geometry" | "Data Analysis"
+  question    String
+  options     String[] // для mcq
+  correctIdx  Int?     // для mcq
+  correctAns  String?  // для grid-in
+  explanation String
+
+  exam SATExam @relation(fields: [examId], references: [id], onDelete: Cascade)
+
+  @@index([examId])
+  @@map("sat_questions")
+}
+
+// ─── Content: Flashcards ─────────────────────────────────────────────────────
+
+model FlashcardSet {
+  id        String   @id @default(cuid())
+  title     String
+  subject   String
+  isActive  Boolean  @default(true)
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  cards Flashcard[]
+
+  @@map("flashcard_sets")
+}
+
+model Flashcard {
+  id    String @id @default(cuid())
+  setId String
+  front String
+  back  String
+  order Int    @default(0)
+
+  set FlashcardSet @relation(fields: [setId], references: [id], onDelete: Cascade)
+
+  @@index([setId])
+  @@map("flashcards")
+}
+
+// ─── Content: IELTS ──────────────────────────────────────────────────────────
+
+model IELTSPassage {
+  id        String   @id @default(cuid())
+  title     String
+  body      String   // длинный текст пассажа
+  questions Json     // [{q, options, correctIdx}]
+  isActive  Boolean  @default(true)
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("ielts_passages")
+}
+
+// ─── AI Logs ─────────────────────────────────────────────────────────────────
+
+model AILog {
+  id           String   @id @default(cuid())
+  userId       String?  // null = анонимный
+  type         String   // "chat" | "quiz" | "essay" | "weakness-quiz"
+  promptTokens Int?
+  replyTokens  Int?
+  latencyMs    Int?
+  status       String   @default("ok") // "ok" | "error" | "rate_limited"
+  errorMsg     String?
+  createdAt    DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([createdAt])
+  @@index([userId])
+  @@index([type])
+  @@map("ai_logs")
+}
+
+// ─── System Settings (key-value) ─────────────────────────────────────────────
+
+model SystemSetting {
+  key       String   @id
+  value     String   // JSON-строка
+  updatedAt DateTime @updatedAt
+  updatedBy String?
+
+  @@map("system_settings")
 }
