@@ -39,7 +39,7 @@ app.use(express.json());
 app.use(cookieParser());
 
 // ─── Logging ──────────────────────────────────────────────────────────────────
-if (process.env.NODE_ENV === 'development') {
+if (process.env.NODE_ENV === 'development' || process.env.LOG_LEVEL === 'debug') {
   app.use(morgan('dev'));
 }
 

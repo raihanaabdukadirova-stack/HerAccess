@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { api } from '../utils/api.js';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -20,8 +20,7 @@ const Q_TYPES = [
 
 function fmtTime(s) {
   if (!s) return '—';
-  const m = Math.floor(s / 60);
-  return `${m} min`;
+  return `${Math.floor(s / 60)} min`;
 }
 
 const EMPTY_TEST = {
@@ -40,6 +39,30 @@ const EMPTY_QUESTION = {
   options: ['', '', '', ''],
   correctAnswer: '',
   explanation: '',
+};
+
+// ─── Style helpers ────────────────────────────────────────────────────────────
+
+const inputStyle = {
+  border: '2px solid #e4e4e7',
+  borderRadius: 9,
+  padding: '8px 12px',
+  fontSize: 13,
+  fontFamily: "'Outfit',sans-serif",
+  outline: 'none',
+  transition: 'border-color .2s',
+  background: '#fff',
+  color: '#1c1917',
+};
+
+const selectStyle = {
+  ...inputStyle,
+  cursor: 'pointer',
+  appearance: 'none',
+  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='none' stroke='%23a1a1aa' stroke-width='2'%3E%3Cpath d='M1 4l5 5 5-5'/%3E%3C/svg%3E")`,
+  backgroundRepeat: 'no-repeat',
+  backgroundPosition: 'right 10px center',
+  paddingRight: 30,
 };
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
@@ -90,7 +113,7 @@ function Alert({ type = 'error', msg, onClose }) {
     error: { bg: '#fef2f2', border: '#fca5a5', text: '#b91c1c' },
     success: { bg: '#f0fdf4', border: '#86efac', text: '#15803d' },
   };
-  const c = colors[type];
+  const c = colors[type] || colors.error;
   return (
     <div
       style={{
@@ -126,6 +149,23 @@ function Alert({ type = 'error', msg, onClose }) {
   );
 }
 
+function FieldLabel({ children }) {
+  return (
+    <div
+      style={{
+        fontSize: 11,
+        fontWeight: 700,
+        color: '#6b7280',
+        textTransform: 'uppercase',
+        letterSpacing: 0.4,
+        marginBottom: 5,
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
 // ─── Question Editor ──────────────────────────────────────────────────────────
 
 function QuestionEditor({ q, idx, onChange, onDelete }) {
@@ -146,9 +186,9 @@ function QuestionEditor({ q, idx, onChange, onDelete }) {
         borderRadius: 12,
         padding: '16px 18px',
         marginBottom: 12,
-        position: 'relative',
       }}
     >
+      {/* Row 1: type / section / order / remove */}
       <div
         style={{
           display: 'flex',
@@ -216,6 +256,7 @@ function QuestionEditor({ q, idx, onChange, onDelete }) {
         </button>
       </div>
 
+      {/* Question text */}
       <textarea
         placeholder="Question text *"
         value={q.questionText}
@@ -224,20 +265,10 @@ function QuestionEditor({ q, idx, onChange, onDelete }) {
         style={{ ...inputStyle, width: '100%', resize: 'vertical', marginBottom: 10 }}
       />
 
+      {/* MCQ options */}
       {q.type === 'mcq' && (
         <div style={{ marginBottom: 10 }}>
-          <div
-            style={{
-              fontSize: 11,
-              fontWeight: 700,
-              color: '#6b7280',
-              textTransform: 'uppercase',
-              letterSpacing: 0.4,
-              marginBottom: 6,
-            }}
-          >
-            Answer Options
-          </div>
+          <FieldLabel>Answer Options</FieldLabel>
           {(q.options || ['', '', '', '']).map((opt, i) => (
             <div key={i} style={{ display: 'flex', gap: 6, marginBottom: 6, alignItems: 'center' }}>
               <span
@@ -262,20 +293,10 @@ function QuestionEditor({ q, idx, onChange, onDelete }) {
         </div>
       )}
 
+      {/* Correct answer + explanation */}
       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
         <div style={{ flex: 1, minWidth: 160 }}>
-          <div
-            style={{
-              fontSize: 11,
-              fontWeight: 700,
-              color: '#6b7280',
-              textTransform: 'uppercase',
-              letterSpacing: 0.4,
-              marginBottom: 4,
-            }}
-          >
-            Correct Answer *
-          </div>
+          <FieldLabel>Correct Answer *</FieldLabel>
           <input
             placeholder={q.type === 'mcq' ? 'e.g. A or full text' : 'Correct answer'}
             value={q.correctAnswer}
@@ -284,18 +305,7 @@ function QuestionEditor({ q, idx, onChange, onDelete }) {
           />
         </div>
         <div style={{ flex: 2, minWidth: 200 }}>
-          <div
-            style={{
-              fontSize: 11,
-              fontWeight: 700,
-              color: '#6b7280',
-              textTransform: 'uppercase',
-              letterSpacing: 0.4,
-              marginBottom: 4,
-            }}
-          >
-            Explanation
-          </div>
+          <FieldLabel>Explanation</FieldLabel>
           <input
             placeholder="Explanation for students (optional)"
             value={q.explanation || ''}
@@ -312,7 +322,7 @@ function QuestionEditor({ q, idx, onChange, onDelete }) {
 
 function TestModal({ test, onClose, onSave }) {
   const isEdit = !!test?.id;
-  const [form, setForm] = useState(
+  const [form, setFormState] = useState(
     isEdit
       ? {
           title: test.title,
@@ -335,7 +345,7 @@ function TestModal({ test, onClose, onSave }) {
   const [err, setErr] = useState('');
 
   function setField(f, v) {
-    setForm((p) => ({ ...p, [f]: v }));
+    setFormState((p) => ({ ...p, [f]: v }));
   }
 
   function addQuestion() {
@@ -346,7 +356,7 @@ function TestModal({ test, onClose, onSave }) {
     setQuestions((qs) => qs.map((old, i) => (i === idx ? q : old)));
   }
 
-  function deleteQuestion(idx) {
+  function removeQuestion(idx) {
     setQuestions((qs) => qs.filter((_, i) => i !== idx));
   }
 
@@ -380,13 +390,10 @@ function TestModal({ test, onClose, onSave }) {
     setLoading(true);
     setErr('');
     try {
-      let result;
-      if (isEdit) {
-        result = await api.patch(`/api/admin/tests/${test.id}`, payload);
-      } else {
-        result = await api.post('/api/admin/tests', payload);
-      }
-      onSave(result.test);
+      const result = isEdit
+        ? await api.patch(`/api/admin/tests/${test.id}`, payload)
+        : await api.post('/api/admin/tests', payload);
+      onSave(result.test, isEdit);
     } catch (e) {
       setErr(e.message || 'Failed to save test.');
     } finally {
@@ -574,7 +581,7 @@ function TestModal({ test, onClose, onSave }) {
               q={q}
               idx={i}
               onChange={updateQuestion}
-              onDelete={deleteQuestion}
+              onDelete={removeQuestion}
             />
           ))}
         </div>
@@ -631,17 +638,50 @@ function TestModal({ test, onClose, onSave }) {
   );
 }
 
-// ─── Test Detail View (questions list) ───────────────────────────────────────
+// ─── Test Detail View ─────────────────────────────────────────────────────────
 
-function TestDetail({ test, onBack, onRefresh }) {
-  const [questions, setQuestions] = useState(test.questions || []);
-  const [editingQ, setEditingQ] = useState(null); // question being edited inline
+function TestDetail({ test: initialTest, onBack }) {
+  // BUG FIX: держим test локально, чтобы publish-статус обновлялся без перезагрузки
+  const [test, setTest] = useState(initialTest);
+  const [questions, setQuestions] = useState(initialTest.questions || []);
   const [newQ, setNewQ] = useState(null);
+  // editingQ хранит { id, data } — вопрос, который сейчас редактируется
+  const [editingQ, setEditingQ] = useState(null);
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState({ type: '', text: '' });
 
+  function showMsg(type, text) {
+    setMsg({ type, text });
+    setTimeout(() => setMsg({ type: '', text: '' }), 3000);
+  }
+
+  // ── Publish toggle ────────────────────────────────────────────────────────
+  async function togglePublish() {
+    setLoading(true);
+    try {
+      const { test: updated } = await api.patch(`/api/admin/tests/${test.id}/publish`, {
+        isPublished: !test.isPublished,
+      });
+      // BUG FIX: обновляем локальный test, а не только вызываем onRefresh
+      setTest((t) => ({ ...t, isPublished: updated.isPublished }));
+      showMsg('success', updated.isPublished ? '🚀 Published!' : 'Moved to Draft.');
+    } catch (e) {
+      showMsg('error', e.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // ── Add new question ──────────────────────────────────────────────────────
   async function saveNewQuestion() {
-    if (!newQ?.questionText?.trim()) return;
+    if (!newQ?.questionText?.trim()) {
+      showMsg('error', 'Question text is required.');
+      return;
+    }
+    if (!newQ.correctAnswer?.trim()) {
+      showMsg('error', 'Correct answer is required.');
+      return;
+    }
     setLoading(true);
     try {
       const { question } = await api.post(`/api/admin/tests/${test.id}/questions`, {
@@ -655,36 +695,56 @@ function TestDetail({ test, onBack, onRefresh }) {
       });
       setQuestions((qs) => [...qs, question]);
       setNewQ(null);
-      setMsg({ type: 'success', text: 'Question added.' });
+      showMsg('success', 'Question added.');
     } catch (e) {
-      setMsg({ type: 'error', text: e.message });
+      showMsg('error', e.message);
     } finally {
       setLoading(false);
     }
   }
 
+  // ── Save edited question ──────────────────────────────────────────────────
+  async function saveEditedQuestion() {
+    if (!editingQ?.data?.questionText?.trim()) {
+      showMsg('error', 'Question text is required.');
+      return;
+    }
+    if (!editingQ.data.correctAnswer?.trim()) {
+      showMsg('error', 'Correct answer is required.');
+      return;
+    }
+    setLoading(true);
+    try {
+      const { question } = await api.patch(`/api/admin/questions/${editingQ.id}`, {
+        orderIndex: editingQ.data.orderIndex,
+        type: editingQ.data.type,
+        section: editingQ.data.section || undefined,
+        questionText: editingQ.data.questionText,
+        options:
+          editingQ.data.type === 'mcq' ? (editingQ.data.options || []).filter(Boolean) : undefined,
+        correctAnswer: editingQ.data.correctAnswer,
+        explanation: editingQ.data.explanation || undefined,
+      });
+      setQuestions((qs) => qs.map((q) => (q.id === question.id ? question : q)));
+      setEditingQ(null);
+      showMsg('success', 'Question updated.');
+    } catch (e) {
+      showMsg('error', e.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // ── Delete question ───────────────────────────────────────────────────────
   async function deleteQ(qId) {
-    if (!confirm('Delete this question?')) return;
+    if (!window.confirm('Delete this question?')) return;
     setLoading(true);
     try {
       await api.delete(`/api/admin/questions/${qId}`);
       setQuestions((qs) => qs.filter((q) => q.id !== qId));
-      setMsg({ type: 'success', text: 'Question deleted.' });
+      showMsg('success', 'Question deleted.');
     } catch (e) {
-      setMsg({ type: 'error', text: e.message });
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function togglePublish() {
-    setLoading(true);
-    try {
-      await api.patch(`/api/admin/tests/${test.id}/publish`, { isPublished: !test.isPublished });
-      onRefresh();
-      setMsg({ type: 'success', text: test.isPublished ? 'Unpublished.' : 'Published!' });
-    } catch (e) {
-      setMsg({ type: 'error', text: e.message });
+      showMsg('error', e.message);
     } finally {
       setLoading(false);
     }
@@ -696,6 +756,7 @@ function TestDetail({ test, onBack, onRefresh }) {
         ← Back to Tests
       </button>
 
+      {/* Test header */}
       <div
         style={{
           display: 'flex',
@@ -736,7 +797,8 @@ function TestDetail({ test, onBack, onRefresh }) {
             padding: '9px 20px',
             fontSize: 13,
             fontWeight: 700,
-            cursor: 'pointer',
+            cursor: loading ? 'not-allowed' : 'pointer',
+            opacity: loading ? 0.7 : 1,
           }}
         >
           {test.isPublished ? 'Unpublish' : '🚀 Publish'}
@@ -785,51 +847,112 @@ function TestDetail({ test, onBack, onRefresh }) {
         </div>
       )}
 
-      {questions.map((q, i) => (
-        <div
-          key={q.id}
-          style={{
-            background: '#fff',
-            border: '1px solid #e4e4e7',
-            borderRadius: 10,
-            padding: '14px 16px',
-            marginBottom: 10,
-          }}
-        >
+      {questions.map((q, i) => {
+        // If this question is being edited, show the editor inline
+        if (editingQ?.id === q.id) {
+          return (
+            <div
+              key={q.id}
+              style={{
+                background: '#f5f3ff',
+                border: '1px solid #c4b5fd',
+                borderRadius: 12,
+                padding: '16px 18px',
+                marginBottom: 10,
+              }}
+            >
+              <div
+                style={{
+                  fontFamily: "'Lora',serif",
+                  fontSize: 13,
+                  fontWeight: 700,
+                  marginBottom: 10,
+                  color: 'var(--p)',
+                }}
+              >
+                Editing Q{i + 1}
+              </div>
+              <QuestionEditor
+                q={editingQ.data}
+                idx={i}
+                onChange={(_, updated) => setEditingQ((e) => ({ ...e, data: updated }))}
+                onDelete={() => setEditingQ(null)}
+              />
+              <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+                <button
+                  onClick={() => setEditingQ(null)}
+                  style={{
+                    background: '#fff',
+                    border: '2px solid #e4e4e7',
+                    borderRadius: 999,
+                    padding: '7px 16px',
+                    fontSize: 12,
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={saveEditedQuestion}
+                  disabled={loading}
+                  style={{
+                    background: 'linear-gradient(135deg,#6d28d9,#db2777)',
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: 999,
+                    padding: '7px 18px',
+                    fontSize: 12,
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    opacity: loading ? 0.75 : 1,
+                  }}
+                >
+                  {loading && <Spinner size={12} />}
+                  Save Question
+                </button>
+              </div>
+            </div>
+          );
+        }
+
+        // Normal read view
+        return (
           <div
+            key={q.id}
             style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'flex-start',
-              gap: 10,
+              background: '#fff',
+              border: '1px solid #e4e4e7',
+              borderRadius: 10,
+              padding: '14px 16px',
+              marginBottom: 10,
             }}
           >
-            <div style={{ flex: 1 }}>
-              <div style={{ display: 'flex', gap: 6, marginBottom: 6, flexWrap: 'wrap' }}>
-                <span
-                  style={{
-                    fontSize: 11,
-                    fontWeight: 700,
-                    background: 'var(--p4)',
-                    color: 'var(--p)',
-                    padding: '1px 7px',
-                    borderRadius: 999,
-                  }}
-                >
-                  Q{i + 1}
-                </span>
-                <span
-                  style={{
-                    fontSize: 11,
-                    background: '#f4f4f5',
-                    color: '#52525b',
-                    padding: '1px 7px',
-                    borderRadius: 999,
-                  }}
-                >
-                  {Q_TYPES.find((t) => t.value === q.type)?.label || q.type}
-                </span>
-                {q.section && (
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'flex-start',
+                gap: 10,
+              }}
+            >
+              <div style={{ flex: 1 }}>
+                <div style={{ display: 'flex', gap: 6, marginBottom: 6, flexWrap: 'wrap' }}>
+                  <span
+                    style={{
+                      fontSize: 11,
+                      fontWeight: 700,
+                      background: 'var(--p4)',
+                      color: 'var(--p)',
+                      padding: '1px 7px',
+                      borderRadius: 999,
+                    }}
+                  >
+                    Q{i + 1}
+                  </span>
                   <span
                     style={{
                       fontSize: 11,
@@ -839,42 +962,89 @@ function TestDetail({ test, onBack, onRefresh }) {
                       borderRadius: 999,
                     }}
                   >
-                    {q.section}
+                    {Q_TYPES.find((t) => t.value === q.type)?.label || q.type}
                   </span>
+                  {q.section && (
+                    <span
+                      style={{
+                        fontSize: 11,
+                        background: '#f4f4f5',
+                        color: '#52525b',
+                        padding: '1px 7px',
+                        borderRadius: 999,
+                      }}
+                    >
+                      {q.section}
+                    </span>
+                  )}
+                </div>
+                <div
+                  style={{
+                    fontSize: 13.5,
+                    fontWeight: 500,
+                    lineHeight: 1.5,
+                    marginBottom: 6,
+                    color: '#1c1917',
+                  }}
+                >
+                  {q.questionText.length > 160
+                    ? q.questionText.slice(0, 160) + '…'
+                    : q.questionText}
+                </div>
+                <div style={{ fontSize: 11.5, color: '#059669' }}>✓ {q.correctAnswer}</div>
+                {q.explanation && (
+                  <div style={{ fontSize: 11.5, color: '#a1a1aa', marginTop: 3 }}>
+                    💡{' '}
+                    {q.explanation.length > 100 ? q.explanation.slice(0, 100) + '…' : q.explanation}
+                  </div>
                 )}
               </div>
-              <div
-                style={{
-                  fontSize: 13.5,
-                  fontWeight: 500,
-                  lineHeight: 1.5,
-                  marginBottom: 6,
-                  color: '#1c1917',
-                }}
-              >
-                {q.questionText.length > 160 ? q.questionText.slice(0, 160) + '…' : q.questionText}
+
+              {/* BUG FIX: добавлена кнопка Edit вопроса */}
+              <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+                <button
+                  onClick={() =>
+                    setEditingQ({
+                      id: q.id,
+                      data: {
+                        ...q,
+                        options: Array.isArray(q.options) ? q.options : ['', '', '', ''],
+                      },
+                    })
+                  }
+                  style={{
+                    background: 'var(--p4)',
+                    border: '1px solid #c4b5fd',
+                    color: 'var(--p)',
+                    borderRadius: 7,
+                    padding: '4px 10px',
+                    fontSize: 12,
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                  }}
+                >
+                  Edit
+                </button>
+                <button
+                  onClick={() => deleteQ(q.id)}
+                  style={{
+                    background: '#fef2f2',
+                    border: '1px solid #fca5a5',
+                    color: '#b91c1c',
+                    borderRadius: 7,
+                    padding: '4px 10px',
+                    fontSize: 12,
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                  }}
+                >
+                  Delete
+                </button>
               </div>
-              <div style={{ fontSize: 11.5, color: '#059669' }}>✓ {q.correctAnswer}</div>
             </div>
-            <button
-              onClick={() => deleteQ(q.id)}
-              style={{
-                background: '#fef2f2',
-                border: '1px solid #fca5a5',
-                color: '#b91c1c',
-                borderRadius: 7,
-                padding: '4px 10px',
-                fontSize: 12,
-                fontWeight: 600,
-                cursor: 'pointer',
-                flexShrink: 0,
-              }}
-            >
-              Delete
-            </button>
           </div>
-        </div>
-      ))}
+        );
+      })}
 
       {/* Add question inline */}
       {newQ ? (
@@ -928,6 +1098,7 @@ function TestDetail({ test, onBack, onRefresh }) {
                 display: 'flex',
                 alignItems: 'center',
                 gap: 6,
+                opacity: loading ? 0.75 : 1,
               }}
             >
               {loading && <Spinner size={12} />} Save Question
@@ -967,8 +1138,22 @@ function TestsList({ onSelect, refreshKey }) {
   const [editing, setEditing] = useState(null);
   const [msg, setMsg] = useState({ type: '', text: '' });
 
+  // Search & filter
+  const [search, setSearch] = useState('');
+  const [filterType, setFilterType] = useState('');
+  const [filterStatus, setFilterStatus] = useState('');
+
+  // BUG FIX: сохраняем isEdit в ref чтобы избежать stale closure в handleSaved
+  const isEditRef = useRef(false);
+
+  function showMsg(type, text) {
+    setMsg({ type, text });
+    setTimeout(() => setMsg({ type: '', text: '' }), 3000);
+  }
+
   const load = useCallback(async () => {
     setLoading(true);
+    setErr('');
     try {
       const { tests } = await api.get('/api/admin/tests');
       setTests(tests);
@@ -984,13 +1169,13 @@ function TestsList({ onSelect, refreshKey }) {
   }, [load, refreshKey]);
 
   async function deleteTest(id, title) {
-    if (!confirm(`Delete "${title}"? This will also delete all questions.`)) return;
+    if (!window.confirm(`Delete "${title}"? This will also delete all questions.`)) return;
     try {
       await api.delete(`/api/admin/tests/${id}`);
       setTests((ts) => ts.filter((t) => t.id !== id));
-      setMsg({ type: 'success', text: 'Test deleted.' });
+      showMsg('success', 'Test deleted.');
     } catch (e) {
-      setMsg({ type: 'error', text: e.message });
+      showMsg('error', e.message);
     }
   }
 
@@ -1003,20 +1188,33 @@ function TestsList({ onSelect, refreshKey }) {
         ts.map((t) => (t.id === updated.id ? { ...t, isPublished: updated.isPublished } : t))
       );
     } catch (e) {
-      setMsg({ type: 'error', text: e.message });
+      showMsg('error', e.message);
     }
   }
 
-  function handleSaved(test) {
+  // BUG FIX: используем ref для isEdit, чтобы closure не захватила старый editing
+  function handleSaved(test, wasEdit) {
     setTests((ts) => {
-      const exists = ts.find((t) => t.id === test.id);
-      if (exists) return ts.map((t) => (t.id === test.id ? { ...t, ...test } : t));
+      if (wasEdit) return ts.map((t) => (t.id === test.id ? { ...t, ...test } : t));
       return [test, ...ts];
     });
     setShowModal(false);
     setEditing(null);
-    setMsg({ type: 'success', text: editing ? 'Test updated!' : 'Test created!' });
+    showMsg('success', wasEdit ? 'Test updated!' : 'Test created!');
   }
+
+  // Filtered list
+  const visible = tests.filter((t) => {
+    if (search && !t.title.toLowerCase().includes(search.toLowerCase())) return false;
+    if (filterType && t.type !== filterType) return false;
+    if (filterStatus === 'published' && !t.isPublished) return false;
+    if (filterStatus === 'draft' && t.isPublished) return false;
+    return true;
+  });
+
+  // Stats
+  const publishedCount = tests.filter((t) => t.isPublished).length;
+  const draftCount = tests.length - publishedCount;
 
   if (loading)
     return (
@@ -1031,26 +1229,57 @@ function TestsList({ onSelect, refreshKey }) {
 
   return (
     <div>
+      {/* Stats bar */}
+      <div style={{ display: 'flex', gap: 10, marginBottom: 20, flexWrap: 'wrap' }}>
+        {[
+          { label: 'Total', value: tests.length, color: '#6d28d9', bg: '#f5f3ff' },
+          { label: 'Published', value: publishedCount, color: '#15803d', bg: '#f0fdf4' },
+          { label: 'Drafts', value: draftCount, color: '#854d0e', bg: '#fefce8' },
+        ].map((s) => (
+          <div
+            key={s.label}
+            style={{
+              background: s.bg,
+              border: `1px solid ${s.color}22`,
+              borderRadius: 10,
+              padding: '10px 18px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+            }}
+          >
+            <span
+              style={{ fontSize: 22, fontWeight: 700, fontFamily: "'Lora',serif", color: s.color }}
+            >
+              {s.value}
+            </span>
+            <span
+              style={{
+                fontSize: 11,
+                color: s.color,
+                fontWeight: 600,
+                textTransform: 'uppercase',
+                letterSpacing: 0.4,
+              }}
+            >
+              {s.label}
+            </span>
+          </div>
+        ))}
+      </div>
+
+      {/* Header + New Test button */}
       <div
         style={{
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          marginBottom: 20,
+          marginBottom: 16,
           flexWrap: 'wrap',
           gap: 10,
         }}
       >
-        <div>
-          <h2
-            style={{ fontFamily: "'Lora',serif", fontSize: 22, fontWeight: 700, marginBottom: 2 }}
-          >
-            All Tests
-          </h2>
-          <p style={{ fontSize: 13, color: '#a1a1aa' }}>
-            {tests.length} test{tests.length !== 1 ? 's' : ''} total
-          </p>
-        </div>
+        <h2 style={{ fontFamily: "'Lora',serif", fontSize: 22, fontWeight: 700 }}>All Tests</h2>
         <button
           onClick={() => {
             setEditing(null);
@@ -1072,6 +1301,58 @@ function TestsList({ onSelect, refreshKey }) {
         </button>
       </div>
 
+      {/* Search & filters */}
+      <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
+        <input
+          placeholder="🔍 Search by title…"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          style={{ ...inputStyle, flex: 1, minWidth: 180 }}
+        />
+        <select
+          value={filterType}
+          onChange={(e) => setFilterType(e.target.value)}
+          style={{ ...selectStyle, minWidth: 160 }}
+        >
+          <option value="">All Types</option>
+          {TEST_TYPES.map((t) => (
+            <option key={t.value} value={t.value}>
+              {t.label}
+            </option>
+          ))}
+        </select>
+        <select
+          value={filterStatus}
+          onChange={(e) => setFilterStatus(e.target.value)}
+          style={{ ...selectStyle, minWidth: 130 }}
+        >
+          <option value="">All Status</option>
+          <option value="published">Published</option>
+          <option value="draft">Draft</option>
+        </select>
+        {(search || filterType || filterStatus) && (
+          <button
+            onClick={() => {
+              setSearch('');
+              setFilterType('');
+              setFilterStatus('');
+            }}
+            style={{
+              background: '#f4f4f5',
+              border: '1px solid #d4d4d8',
+              borderRadius: 9,
+              padding: '8px 12px',
+              fontSize: 12,
+              fontWeight: 600,
+              cursor: 'pointer',
+              color: '#52525b',
+            }}
+          >
+            Clear
+          </button>
+        )}
+      </div>
+
       {err && <Alert type="error" msg={err} />}
       <Alert
         type={msg.type || 'error'}
@@ -1079,16 +1360,22 @@ function TestsList({ onSelect, refreshKey }) {
         onClose={() => setMsg({ type: '', text: '' })}
       />
 
-      {tests.length === 0 && (
+      {visible.length === 0 && (
         <div style={{ textAlign: 'center', padding: '60px 20px', color: '#a1a1aa' }}>
           <div style={{ fontSize: 40, marginBottom: 12 }}>📋</div>
-          <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 6 }}>No tests yet</div>
-          <div style={{ fontSize: 13 }}>Click "+ New Test" to create your first test.</div>
+          <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 6 }}>
+            {tests.length === 0 ? 'No tests yet' : 'No tests match your filters'}
+          </div>
+          <div style={{ fontSize: 13 }}>
+            {tests.length === 0
+              ? 'Click "+ New Test" to create your first test.'
+              : 'Try clearing the search or filters.'}
+          </div>
         </div>
       )}
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-        {tests.map((test) => (
+        {visible.map((test) => (
           <div
             key={test.id}
             style={{
@@ -1113,31 +1400,37 @@ function TestsList({ onSelect, refreshKey }) {
                 justifyContent: 'space-between',
                 alignItems: 'flex-start',
                 gap: 12,
-                flexWrap: 'wrap',
               }}
             >
-              <div
-                style={{ flex: 1, minWidth: 0, cursor: 'pointer' }}
-                onClick={() => onSelect(test)}
-              >
+              {/* Left: info */}
+              <div style={{ flex: 1, minWidth: 0 }}>
                 <div
                   style={{
                     display: 'flex',
                     gap: 8,
                     alignItems: 'center',
-                    marginBottom: 5,
                     flexWrap: 'wrap',
+                    marginBottom: 5,
                   }}
                 >
-                  <span style={{ fontFamily: "'Lora',serif", fontSize: 16, fontWeight: 700 }}>
-                    {test.title}
-                  </span>
                   <Badge published={test.isPublished} />
-                </div>
-                <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-                  <span style={{ fontSize: 11.5, color: '#6b7280' }}>
+                  <span
+                    style={{
+                      fontSize: 11,
+                      background: '#f4f4f5',
+                      color: '#52525b',
+                      padding: '1px 8px',
+                      borderRadius: 999,
+                      fontWeight: 600,
+                    }}
+                  >
                     {TEST_TYPES.find((t) => t.value === test.type)?.label || test.type}
                   </span>
+                </div>
+                <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 4, color: '#1c1917' }}>
+                  {test.title}
+                </div>
+                <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
                   {test.timeLimit && (
                     <span style={{ fontSize: 11.5, color: '#6b7280' }}>
                       ⏱ {fmtTime(test.timeLimit)}
@@ -1160,6 +1453,7 @@ function TestsList({ onSelect, refreshKey }) {
                 )}
               </div>
 
+              {/* Right: actions */}
               <div style={{ display: 'flex', gap: 7, flexShrink: 0, flexWrap: 'wrap' }}>
                 <button
                   onClick={() => togglePublish(test)}
@@ -1244,54 +1538,13 @@ function TestsList({ onSelect, refreshKey }) {
   );
 }
 
-// ─── Style helpers ────────────────────────────────────────────────────────────
-
-const inputStyle = {
-  border: '2px solid #e4e4e7',
-  borderRadius: 9,
-  padding: '8px 12px',
-  fontSize: 13,
-  fontFamily: "'Outfit',sans-serif",
-  outline: 'none',
-  transition: 'border-color .2s',
-  background: '#fff',
-  color: '#1c1917',
-};
-
-const selectStyle = {
-  ...inputStyle,
-  cursor: 'pointer',
-  appearance: 'none',
-  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='none' stroke='%23a1a1aa' stroke-width='2'%3E%3Cpath d='M1 4l5 5 5-5'/%3E%3C/svg%3E")`,
-  backgroundRepeat: 'no-repeat',
-  backgroundPosition: 'right 10px center',
-  paddingRight: 30,
-};
-
-function FieldLabel({ children }) {
-  return (
-    <div
-      style={{
-        fontSize: 11,
-        fontWeight: 700,
-        color: '#6b7280',
-        textTransform: 'uppercase',
-        letterSpacing: 0.4,
-        marginBottom: 5,
-      }}
-    >
-      {children}
-    </div>
-  );
-}
-
 // ─── Main AdminPage ───────────────────────────────────────────────────────────
 
 export default function AdminPage({ user, setPage }) {
   const [selectedTest, setSelectedTest] = useState(null);
   const [refreshKey, setRefreshKey] = useState(0);
 
-  // Guard: only ADMIN can see this
+  // Guard: only ADMIN
   if (!user || user.role !== 'ADMIN') {
     return (
       <div
@@ -1400,12 +1653,10 @@ export default function AdminPage({ user, setPage }) {
               setSelectedTest(null);
               setRefreshKey((k) => k + 1);
             }}
-            onRefresh={() => setRefreshKey((k) => k + 1)}
           />
         ) : (
           <TestsList
             onSelect={async (test) => {
-              // Load full test with questions
               try {
                 const { test: full } = await api.get(`/api/admin/tests/${test.id}`);
                 setSelectedTest(full);
