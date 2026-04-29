@@ -72,3 +72,22 @@ export const publishSchema = [
   body("isPublished")
     .isBoolean().withMessage("isPublished must be boolean."),
 ];
+
+// ─── Users (§2.2) ────────────────────────────────────────────────────────────
+
+export const userRoleSchema = [
+  body("role")
+    .isIn(["STUDENT", "ADMIN"])
+    .withMessage("Role must be STUDENT or ADMIN."),
+];
+
+export const userBanSchema = [
+  body("banned")
+    .isBoolean()
+    .withMessage("banned must be boolean."),
+  body("reason")
+    .optional({ nullable: true })
+    .trim()
+    .isLength({ max: 500 })
+    .withMessage("Reason max 500 characters."),
+];

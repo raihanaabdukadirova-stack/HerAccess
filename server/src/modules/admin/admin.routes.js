@@ -2,8 +2,24 @@ import { Router } from "express";
 import { requireAuth, requireRole } from "../../middleware/auth.js";
 import { validate } from "../../middleware/validate.js";
 import { asyncHandler } from "../../middleware/errorHandler.js";
-import { testSchema, questionSchema, publishSchema } from "./admin.schema.js";
 import {
+  testSchema,
+  questionSchema,
+  publishSchema,
+  userRoleSchema,
+  userBanSchema,
+} from "./admin.schema.js";
+import {
+  getStatsController,
+  listUsersController,
+  getUserDetailController,
+  updateUserRoleController,
+  setUserBanController,
+  deleteUserController,
+  getUserProgressController,
+  resetUserProgressController,
+  getSettingsController,
+  updateSettingsController,
   getAllTestsController,
   getTestByIdController,
   createTestController,
@@ -19,6 +35,25 @@ const router = Router();
 
 // Все роуты требуют ADMIN роль
 router.use(requireAuth, requireRole("ADMIN"));
+
+// ─── Dashboard stats (§2.1) ───────────────────────────────────────────────────
+
+router.get("/stats", asyncHandler(getStatsController));
+
+// ─── Users (§2.2) ─────────────────────────────────────────────────────────────
+
+router.get("/users", asyncHandler(listUsersController));
+router.get("/users/:id", asyncHandler(getUserDetailController));
+router.patch("/users/:id/role", userRoleSchema, validate, asyncHandler(updateUserRoleController));
+router.patch("/users/:id/ban", userBanSchema, validate, asyncHandler(setUserBanController));
+router.delete("/users/:id", asyncHandler(deleteUserController));
+router.get("/users/:id/progress", asyncHandler(getUserProgressController));
+router.post("/users/:id/reset-progress", asyncHandler(resetUserProgressController));
+
+// ─── Settings (§2.5) ──────────────────────────────────────────────────────────
+
+router.get("/settings", asyncHandler(getSettingsController));
+router.patch("/settings", asyncHandler(updateSettingsController));
 
 // ─── Tests ────────────────────────────────────────────────────────────────────
 

@@ -1,10 +1,34 @@
+import { useState } from 'react';
 import '../styles/admin.css';
 
-// Stage 1 placeholder. The full AdminLayout + sub-pages land in Stage 2.
-// Old monolithic Test/Question UI was removed; the legacy /api/admin/tests
-// endpoints still work and will be replaced by SATExam/SATQuestion in Stage 6.
+import AdminLayout from './admin/AdminLayout.jsx';
+import AdminDashboard from './admin/AdminDashboard.jsx';
+import AdminUsers from './admin/AdminUsers.jsx';
+import AdminUserDetail from './admin/AdminUserDetail.jsx';
+import AdminSettings from './admin/AdminSettings.jsx';
+
+function ComingSoon({ title }) {
+  return (
+    <div>
+      <div className="admin-page-head">
+        <div>
+          <h1>{title}</h1>
+          <p>This screen lands in a later stage.</p>
+        </div>
+      </div>
+      <div className="admin-card">
+        <div style={{ color: 'var(--g400)', fontSize: 13 }}>
+          Backend is not wired up yet — placeholder.
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function AdminPage({ user, setPage }) {
+  const [section, setSection] = useState('dashboard');
+  const [selectedUserId, setSelectedUserId] = useState(null);
+
   if (!user || user.role !== 'ADMIN') {
     return (
       <div className="page">
@@ -24,19 +48,57 @@ export default function AdminPage({ user, setPage }) {
     );
   }
 
+  function changeSection(next) {
+    setSelectedUserId(null);
+    setSection(next);
+  }
+
+  let body;
+  switch (section) {
+    case 'dashboard':
+      body = <AdminDashboard />;
+      break;
+    case 'users':
+      body = selectedUserId ? (
+        <AdminUserDetail
+          userId={selectedUserId}
+          onBack={() => setSelectedUserId(null)}
+        />
+      ) : (
+        <AdminUsers
+          currentUserId={user.id}
+          onOpenDetail={(id) => setSelectedUserId(id)}
+        />
+      );
+      break;
+    case 'analytics':
+      body = <ComingSoon title="Analytics" />;
+      break;
+    case 'ai-logs':
+      body = <ComingSoon title="AI Logs" />;
+      break;
+    case 'settings':
+      body = <AdminSettings />;
+      break;
+    case 'subjects':
+      body = <ComingSoon title="Subjects & Levels" />;
+      break;
+    case 'sat':
+      body = <ComingSoon title="SAT Exams" />;
+      break;
+    case 'ielts':
+      body = <ComingSoon title="IELTS" />;
+      break;
+    case 'flashcards':
+      body = <ComingSoon title="Flashcards" />;
+      break;
+    default:
+      body = <AdminDashboard />;
+  }
+
   return (
-    <div className="page">
-      <div className="wrap" style={{ paddingTop: 32, maxWidth: 720 }}>
-        <div className="admin-stage-banner">
-          <div className="admin-stage-banner-eyebrow">Admin Panel</div>
-          <h1>Foundation ready ✓</h1>
-          <p>
-            Database schema, maintenance gate and ban-check are wired up.
-            Layout, dashboard and management screens arrive in Stage 2.
-          </p>
-          <div className="admin-stage-pill">Signed in as {user.name} · ADMIN</div>
-        </div>
-      </div>
-    </div>
+    <AdminLayout section={section} setSection={changeSection}>
+      {body}
+    </AdminLayout>
   );
 }
