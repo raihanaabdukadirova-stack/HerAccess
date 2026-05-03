@@ -6,6 +6,7 @@ import AdminDashboard from './admin/AdminDashboard.jsx';
 import AdminUsers from './admin/AdminUsers.jsx';
 import AdminUserDetail from './admin/AdminUserDetail.jsx';
 import AdminSettings from './admin/AdminSettings.jsx';
+import AdminAILogs from './admin/AdminAILogs.jsx';
 
 function ComingSoon({ title }) {
   return (
@@ -75,7 +76,7 @@ export default function AdminPage({ user, setPage }) {
       body = <ComingSoon title="Analytics" />;
       break;
     case 'ai-logs':
-      body = <ComingSoon title="AI Logs" />;
+      body = <AdminAILogs />;
       break;
     case 'settings':
       body = <AdminSettings />;

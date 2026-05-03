@@ -18,6 +18,7 @@ import {
   deleteUserController,
   getUserProgressController,
   resetUserProgressController,
+  listAILogsController,
   getSettingsController,
   updateSettingsController,
   getAllTestsController,
@@ -49,6 +50,10 @@ router.patch("/users/:id/ban", userBanSchema, validate, asyncHandler(setUserBanC
 router.delete("/users/:id", asyncHandler(deleteUserController));
 router.get("/users/:id/progress", asyncHandler(getUserProgressController));
 router.post("/users/:id/reset-progress", asyncHandler(resetUserProgressController));
+
+// ─── AI Logs (§2.4) ───────────────────────────────────────────────────────────
+
+router.get("/ai-logs", asyncHandler(listAILogsController));
 
 // ─── Settings (§2.5) ──────────────────────────────────────────────────────────
 

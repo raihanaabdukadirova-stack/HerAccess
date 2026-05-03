@@ -500,6 +500,88 @@ export async function resetUserProgress(id) {
   ]);
 }
 
+// ─── AI Logs (§2.4) ───────────────────────────────────────────────────────────
+
+const AI_LOG_TYPES = new Set(["chat", "quiz", "weakness-quiz", "essay"]);
+const AI_LOG_STATUSES = new Set(["ok", "error", "rate_limited"]);
+
+export async function listAILogs({
+  page = 1,
+  limit = 50,
+  type = "",
+  status = "",
+  userId = "",
+  dateFrom = "",
+  dateTo = "",
+} = {}) {
+  const take = Math.min(Math.max(parseInt(limit, 10) || 50, 1), 200);
+  const skip = (Math.max(parseInt(page, 10) || 1, 1) - 1) * take;
+
+  const where = {};
+  if (type && AI_LOG_TYPES.has(type)) where.type = type;
+  if (status && AI_LOG_STATUSES.has(status)) where.status = status;
+  if (userId) where.userId = userId;
+
+  if (dateFrom || dateTo) {
+    where.createdAt = {};
+    if (dateFrom) {
+      const d = new Date(dateFrom);
+      if (!Number.isNaN(d.getTime())) where.createdAt.gte = d;
+    }
+    if (dateTo) {
+      const d = new Date(dateTo);
+      if (!Number.isNaN(d.getTime())) where.createdAt.lte = d;
+    }
+    if (Object.keys(where.createdAt).length === 0) delete where.createdAt;
+  }
+
+  const today = startOfToday();
+
+  const [logs, total, totalToday, errorsToday, latencyAgg] = await Promise.all([
+    prisma.aILog.findMany({
+      where,
+      orderBy: { createdAt: "desc" },
+      skip,
+      take,
+      include: {
+        user: { select: { id: true, name: true, email: true } },
+      },
+    }),
+    prisma.aILog.count({ where }),
+    prisma.aILog.count({ where: { createdAt: { gte: today } } }),
+    prisma.aILog.count({ where: { createdAt: { gte: today }, status: "error" } }),
+    prisma.aILog.aggregate({
+      where: { createdAt: { gte: today }, status: "ok", latencyMs: { not: null } },
+      _avg: { latencyMs: true },
+    }),
+  ]);
+
+  return {
+    logs: logs.map((l) => ({
+      id: l.id,
+      userId: l.userId,
+      userName: l.user?.name ?? null,
+      userEmail: l.user?.email ?? null,
+      type: l.type,
+      status: l.status,
+      latencyMs: l.latencyMs,
+      errorMsg: l.errorMsg,
+      createdAt: l.createdAt,
+    })),
+    pagination: {
+      page: Math.max(parseInt(page, 10) || 1, 1),
+      limit: take,
+      total,
+      pages: Math.max(1, Math.ceil(total / take)),
+    },
+    summary: {
+      totalToday,
+      errorsToday,
+      avgLatencyMs: Math.round(latencyAgg._avg.latencyMs ?? 0),
+    },
+  };
+}
+
 // ─── System settings (§2.5) ───────────────────────────────────────────────────
 
 export const SETTINGS_DEFAULTS = {

@@ -55,6 +55,14 @@ export async function resetUserProgressController(req, res) {
   res.json({ message: "Progress reset." });
 }
 
+// ─── AI Logs (§2.4) ───────────────────────────────────────────────────────────
+
+// GET /api/admin/ai-logs
+export async function listAILogsController(req, res) {
+  const data = await adminService.listAILogs(req.query);
+  res.json(data);
+}
+
 // ─── Settings (§2.5) ──────────────────────────────────────────────────────────
 
 // GET /api/admin/settings

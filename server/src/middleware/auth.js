@@ -27,6 +27,23 @@ export function requireAuth(req, res, next) {
 }
 
 /**
+ * Optional auth — attach req.user if a valid Bearer token is present,
+ * otherwise just continue. Useful for endpoints with anon + auth modes
+ * (e.g. AI chat) where downstream code wants to log userId when known.
+ */
+export function optionalAuth(req, _res, next) {
+  const header = req.headers.authorization;
+  if (!header?.startsWith("Bearer ")) return next();
+  try {
+    const payload = jwt.verify(header.slice(7), jwtConfig.access.secret);
+    req.user = { id: payload.sub, email: payload.email, role: payload.role };
+  } catch {
+    // Тихо игнорируем — анонимный режим
+  }
+  next();
+}
+
+/**
  * Role guard — use after requireAuth.
  * Usage: requireRole("ADMIN")
  */
